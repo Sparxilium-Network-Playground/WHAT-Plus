@@ -1,0 +1,8 @@
+target
+.git
+.claude
+.idea
+deploy
+docs
+*.md
+!THIRD-PARTY-NOTICES.md

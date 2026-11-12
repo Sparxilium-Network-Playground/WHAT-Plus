@@ -1,6 +1,6 @@
 # WHAT Plus — 設計草案
 
-> 狀態：待使用者確認（2026-11-13）
+> 狀態：已確認並實作（2026-11-13）。實作細節以 docs/PROJECT-DEV.md 為準；與草案不同處：SQLite 使用 sqlite crate、伺服器 port 以 Docker 對區網開放。
 
 把多台電腦上 Claude Code / Codex / Antigravity 的用量集中到一台伺服器，依排程發送報告到 Discord。
 

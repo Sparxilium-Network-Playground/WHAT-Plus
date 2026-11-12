@@ -6,3 +6,5 @@ deploy/*/config/config.conf
 deploy/*/data/
 deploy/*/secrets/
 deploy/*/keys/
+deploy/agent/.env
+deploy/agent/empty/

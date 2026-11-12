@@ -1,0 +1,27 @@
+# WHAT Plus agent: reads this computer's Claude Code / Codex / Antigravity logs (read-only)
+# and uploads them to the server.
+#
+# Paths to the data folders come from .env (written by the setup script):
+#   CLAUDE_DIR=/home/you/.claude        (Windows: C:/Users/you/.claude)
+#   CODEX_DIR=/home/you/.codex
+#   GEMINI_DIR=/home/you/.gemini
+#   AGENT_UID / AGENT_GID   (Linux only) your user id, so the container can read the logs
+#
+# Admin TUI:  docker compose exec agent whatplus-agent admin
+services:
+  agent:
+    image: whatplus-agent:0.1.0
+    build:
+      context: ../..
+      target: agent
+    # Linux: run as the owner of the log folders so they can be read (set in .env by setup.sh).
+    user: "${AGENT_UID:-10001}:${AGENT_GID:-10001}"
+    volumes:
+      - ${CLAUDE_DIR:-./empty/claude}:/home/whatplus/.claude:ro
+      - ${CODEX_DIR:-./empty/codex}:/home/whatplus/.codex:ro
+      - ${GEMINI_DIR:-./empty/gemini}:/home/whatplus/.gemini:ro
+      - ./data:/data
+      # The agent's private key. Writable so the TUI can generate a new key here.
+      - ./keys:/keys
+    mem_limit: 512m
+    restart: unless-stopped

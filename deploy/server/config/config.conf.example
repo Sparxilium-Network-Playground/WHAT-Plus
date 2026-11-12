@@ -1,0 +1,24 @@
+# Format version of this file. The setup script upgrades older files; do not change it by hand.
+config.version=1
+
+# System-level settings only. Keys, the IP allowlist, Discord channels and schedules are
+# stored in the database and edited in the admin TUI / client app.
+
+# SSH service. Inside the container keep 0.0.0.0; choose the host port in docker-compose.yml.
+ssh.listen=0.0.0.0
+ssh.port=33445
+
+database=/data/whatplus.db
+hostKey=/data/ssh_host_ed25519_key
+
+# Directory the admin TUI scans for *.pub / authorized_keys files.
+keys.dir=/keys
+
+# Discord bot token (secret file written by the setup script).
+discord.token=/run/secrets/discord-token
+
+# Time zone for schedules and report periods (IANA name).
+timezone=Asia/Taipei
+
+# How often the service checks for configuration changes made in the admin TUI.
+reload.intervalMs=5000

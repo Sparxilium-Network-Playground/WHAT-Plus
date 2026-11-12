@@ -1,0 +1,27 @@
+# WHAT Plus server.
+#
+# Layout (this directory):
+#   docker-compose.yml
+#   config/config.conf   created by setup from config.conf.example (not tracked by git)
+#   data/                database and SSH host key (owned by uid 10001)
+#   keys/                public keys to import in the admin TUI (*.pub, authorized_keys)
+#   secrets/discord-token
+#
+# Admin TUI:  docker compose exec server whatplus-server admin
+services:
+  server:
+    image: whatplus-server:0.1.0
+    build:
+      context: ../..
+      target: server
+    volumes:
+      - ./config/config.conf:/config/config.conf:ro
+      - ./data:/data
+      - ./keys:/keys:ro
+      - ./secrets:/run/secrets:ro
+    ports:
+      # The SSH port must be reachable from the agents and the client on your LAN.
+      # Access is limited by the IP allowlist and registered keys (see README).
+      - "33445:33445"
+    mem_limit: 256m
+    restart: unless-stopped
