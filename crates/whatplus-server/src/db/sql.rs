@@ -59,6 +59,7 @@ impl Conn {
         Ok(Self(sqlite::Connection::open(path)?))
     }
 
+    #[cfg(test)]
     pub fn open_in_memory() -> Result<Self> {
         Ok(Self(sqlite::Connection::open(":memory:")?))
     }

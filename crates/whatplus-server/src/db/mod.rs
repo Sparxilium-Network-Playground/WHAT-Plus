@@ -40,6 +40,7 @@ impl Store {
         Ok(store)
     }
 
+    #[cfg(test)]
     pub fn open_in_memory() -> Result<Self> {
         Self::init(Conn::open_in_memory()?)
     }

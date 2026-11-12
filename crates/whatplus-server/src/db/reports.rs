@@ -10,7 +10,6 @@ use crate::params;
 #[derive(Debug, Clone)]
 pub struct ScheduleRun {
     pub last_due_at: String,
-    pub last_run_at: String,
     pub result: String,
 }
 
@@ -147,13 +146,12 @@ impl Store {
 
     pub fn schedule_run(&self, id: i64) -> Result<Option<ScheduleRun>> {
         self.lock().query_row(
-            "SELECT last_due_at, last_run_at, result FROM schedule_run WHERE schedule_id = ?",
+            "SELECT last_due_at, result FROM schedule_run WHERE schedule_id = ?",
             params![id],
             |r| {
                 Ok(ScheduleRun {
                     last_due_at: r.get(0)?,
-                    last_run_at: r.get(1)?,
-                    result: r.get(2)?,
+                    result: r.get(1)?,
                 })
             },
         )
