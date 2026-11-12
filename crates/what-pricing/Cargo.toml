@@ -1,0 +1,19 @@
+[package]
+name = "what-pricing"
+description = "模型價格表：內嵌快照＋使用者手動更新的快取"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+ccusage-core.workspace = true
+ccusage-pricing-snapshots.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+jiff.workspace = true
+ureq = "3"
+
+[dev-dependencies]
+tempfile.workspace = true

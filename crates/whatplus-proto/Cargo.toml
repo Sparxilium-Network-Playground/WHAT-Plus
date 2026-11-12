@@ -1,0 +1,18 @@
+[package]
+name = "whatplus-proto"
+description = "伺服器、來源端與客戶端共用的訊息型別與封包格式"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+what-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+jiff.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["io-util"] }
+
+[dev-dependencies]
+tokio.workspace = true

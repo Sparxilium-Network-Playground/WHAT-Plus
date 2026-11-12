@@ -1,0 +1,8 @@
+/target
+*.tmp
+*.corrupt
+# deploy runtime files (created by setup scripts)
+deploy/*/config/config.conf
+deploy/*/data/
+deploy/*/secrets/
+deploy/*/keys/

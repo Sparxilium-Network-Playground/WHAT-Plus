@@ -1,0 +1,44 @@
+[workspace]
+members = ["crates/*"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+rust-version = "1.97"
+publish = false
+
+[workspace.dependencies]
+what-core = { path = "crates/what-core" }
+what-sources = { path = "crates/what-sources" }
+what-pricing = { path = "crates/what-pricing" }
+whatplus-proto = { path = "crates/whatplus-proto" }
+whatplus-ssh = { path = "crates/whatplus-ssh" }
+
+# ccusage（MIT）以 git 依賴引入，鎖定 commit。只在 what-sources / what-pricing 內使用。
+ccusage-core = { git = "https://github.com/ryoppippi/ccusage", rev = "b71a1aae581b5961655b2cacf4aaf8c402981554" }
+ccusage-adapter-claude = { git = "https://github.com/ryoppippi/ccusage", rev = "b71a1aae581b5961655b2cacf4aaf8c402981554" }
+ccusage-adapter-codex = { git = "https://github.com/ryoppippi/ccusage", rev = "b71a1aae581b5961655b2cacf4aaf8c402981554" }
+ccusage-adapter-antigravity = { git = "https://github.com/ryoppippi/ccusage", rev = "b71a1aae581b5961655b2cacf4aaf8c402981554" }
+ccusage-pricing-snapshots = { git = "https://github.com/ryoppippi/ccusage", rev = "b71a1aae581b5961655b2cacf4aaf8c402981554" }
+
+anyhow = "1"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+jiff = { version = "0.2", features = ["serde"] }
+tempfile = "3"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "io-util", "time", "sync", "signal", "fs"] }
+russh = { version = "0.65", default-features = false, features = ["ring"] }
+ipnet = "2"
+getrandom = "0.3"
+sha2 = "0.10"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+crossterm = "0.29"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

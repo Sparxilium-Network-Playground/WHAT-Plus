@@ -1,0 +1,11 @@
+[package]
+name = "what-core"
+description = "純邏輯：用量資料模型、期間彙總、5 小時計費區塊"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde.workspace = true
+jiff.workspace = true

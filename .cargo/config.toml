@@ -1,0 +1,4 @@
+# ccusage-pricing-snapshots 在建置時需要 LiteLLM 價格快照。
+# 指向 repo 內鎖定版本的檔案，建置過程完全不連網。
+[env]
+CCUSAGE_PRICING_JSON_PATH = { value = "vendor/pricing/litellm-pricing.json", relative = true }

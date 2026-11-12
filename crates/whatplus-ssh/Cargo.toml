@@ -1,0 +1,20 @@
+[package]
+name = "whatplus-ssh"
+description = "SSH 共用：金鑰載入與掃描、指紋、IP 白名單、用戶端連線"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+whatplus-proto.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+russh.workspace = true
+tokio.workspace = true
+ipnet.workspace = true
+getrandom.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
