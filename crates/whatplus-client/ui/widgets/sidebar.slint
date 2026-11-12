@@ -1,0 +1,70 @@
+// 左側導覽。未連線時只有「連線」與「偏好設定」可用。
+import { Theme } from "../theme.slint";
+import { Nav, Page, StatusBar } from "../state.slint";
+
+component NavItem inherits Rectangle {
+    in property <string> text;
+    in property <Page> page;
+    in property <bool> enabled: true;
+    property <bool> selected: Nav.page == root.page;
+    height: Theme.row-height - 2px;
+    border-radius: 4px;
+    background: root.selected ? Theme.nav-selected : (touch.has-hover && root.enabled ? Theme.nav-hover : transparent);
+    accessible-role: button;
+    accessible-label: root.text;
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { Nav.page = root.page; }
+    }
+    Text {
+        x: 12px;
+        text: root.text;
+        color: root.enabled ? Theme.text : Theme.text-faint;
+        font-weight: root.selected ? 600 : 400;
+        vertical-alignment: center;
+    }
+}
+
+component NavHeader inherits Text {
+    color: Theme.text-faint;
+    font-size: Theme.font-small;
+    font-weight: 600;
+}
+
+export component Sidebar inherits Rectangle {
+    background: Theme.sidebar-bg;
+    VerticalLayout {
+        padding: 10px;
+        spacing: 2px;
+        Text {
+            text: "WHAT Plus";
+            color: Theme.text;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        Text {
+            text: StatusBar.connected ? StatusBar.connected-as : @tr("Not connected");
+            color: StatusBar.connected ? Theme.good : Theme.text-faint;
+            font-size: Theme.font-small;
+            overflow: elide;
+        }
+        Rectangle { height: 10px; }
+        NavItem { text: @tr("Connection"); page: Page.connection; }
+        NavItem { text: @tr("Server status"); page: Page.status; enabled: StatusBar.connected; }
+        Rectangle { height: 8px; }
+        NavHeader { text: @tr("Reports"); }
+        NavItem { text: @tr("Send now"); page: Page.push; enabled: StatusBar.connected; }
+        NavItem { text: @tr("Schedules"); page: Page.schedules; enabled: StatusBar.connected; }
+        NavItem { text: @tr("Discord channels"); page: Page.destinations; enabled: StatusBar.connected; }
+        Rectangle { height: 8px; }
+        NavHeader { text: @tr("Sources"); }
+        NavItem { text: @tr("Machines"); page: Page.machines; enabled: StatusBar.connected; }
+        Rectangle { vertical-stretch: 1; }
+        NavItem { text: @tr("Preferences"); page: Page.preferences; }
+        if StatusBar.busy: Text {
+            text: @tr("Working…");
+            color: Theme.text-muted;
+            font-size: Theme.font-small;
+        }
+    }
+}

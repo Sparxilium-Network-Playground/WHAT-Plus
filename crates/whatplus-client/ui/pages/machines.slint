@@ -1,0 +1,75 @@
+// 來源機器：已註冊的公鑰（admin 只能檢視）＋新增來源公鑰。
+import { Theme } from "../theme.slint";
+import { Button, LineEdit, TextEdit } from "std-widgets.slint";
+import { MachineData, StatusBar } from "../state.slint";
+import { PageFrame, SectionHeader, FormRow, Panel, Hint, ListRow } from "../widgets/common.slint";
+
+export component MachinesPage inherits PageFrame {
+    title: @tr("Machines");
+    HorizontalLayout {
+        alignment: start;
+        Button {
+            text: @tr("Refresh");
+            clicked => { MachineData.refresh(); }
+        }
+    }
+    Panel {
+        VerticalLayout {
+            padding: 6px;
+            for row in MachineData.rows: ListRow {
+                title: row.name + "  [" + row.role + "]";
+                detail: row.fingerprint + "  ·  " + row.records + "  ·  " + row.last-seen + "  ·  " + row.cidrs;
+                dimmed: !row.enabled;
+                if row.editable: Button {
+                    text: row.enabled ? @tr("Disable") : @tr("Enable");
+                    clicked => { MachineData.toggle(row.id); }
+                }
+                if row.editable: Button {
+                    text: @tr("Delete");
+                    clicked => { MachineData.delete(row.id); }
+                }
+            }
+        }
+    }
+    Hint {
+        x: 16px;
+        text: @tr("Admin keys can only be changed in the server admin TUI. Deleting a machine also deletes its uploaded records.");
+    }
+
+    SectionHeader { text: @tr("Add a machine"); }
+    FormRow {
+        label: @tr("Name");
+        LineEdit {
+            width: 240px;
+            text <=> MachineData.name;
+        }
+    }
+    FormRow {
+        label: @tr("Public key");
+        hint: @tr("The ssh-ed25519 line shown by the agent's admin TUI");
+        TextEdit {
+            width: 460px;
+            height: 70px;
+            text <=> MachineData.public-key;
+            wrap: char-wrap;
+        }
+    }
+    FormRow {
+        label: @tr("Allowed IP ranges");
+        hint: @tr("Optional, comma-separated, e.g. 192.168.1.20/32");
+        LineEdit {
+            width: 300px;
+            text <=> MachineData.cidrs;
+        }
+    }
+    HorizontalLayout {
+        padding-left: 16px;
+        alignment: start;
+        Button {
+            text: @tr("Add");
+            primary: true;
+            enabled: !StatusBar.busy;
+            clicked => { MachineData.add(); }
+        }
+    }
+}

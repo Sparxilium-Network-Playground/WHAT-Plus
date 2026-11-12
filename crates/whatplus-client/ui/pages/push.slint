@@ -1,0 +1,80 @@
+// 手動推送（測試用）：選期間、內容與頻道，先預覽再發送。
+import { Theme } from "../theme.slint";
+import { Button, ComboBox } from "std-widgets.slint";
+import { PushData, StatusBar } from "../state.slint";
+import { PageFrame, SectionHeader, FormRow, Panel, Hint, CheckList, ContentOptions } from "../widgets/common.slint";
+
+export component PushPage inherits PageFrame {
+    title: @tr("Send report now");
+
+    SectionHeader { text: @tr("Report"); }
+    FormRow {
+        label: @tr("Period");
+        ComboBox {
+            width: 220px;
+            model: [@tr("Today"), @tr("Yesterday"), @tr("Last 7 days"), @tr("This month"), @tr("Last month")];
+            current-index <=> PushData.range-index;
+        }
+    }
+    FormRow {
+        label: @tr("Contents");
+        ContentOptions {
+            content <=> PushData.content;
+        }
+    }
+
+    SectionHeader { text: @tr("Discord channels"); }
+    HorizontalLayout {
+        padding-left: 16px;
+        CheckList {
+            items <=> PushData.destinations;
+            empty-text: @tr("No channels yet. Add one under Discord channels.");
+        }
+    }
+    HorizontalLayout {
+        padding-left: 16px;
+        spacing: 8px;
+        alignment: start;
+        Button {
+            text: @tr("Send");
+            primary: true;
+            enabled: !StatusBar.busy;
+            clicked => { PushData.send-report(); }
+        }
+        Button {
+            text: @tr("Reload channels");
+            clicked => { PushData.refresh(); }
+        }
+    }
+
+    SectionHeader { text: @tr("Preview"); }
+    FormRow {
+        label: @tr("Preview language");
+        ComboBox {
+            width: 160px;
+            model: ["English", "繁體中文"];
+            current-index <=> PushData.language-index;
+        }
+        Button {
+            text: @tr("Preview");
+            enabled: !StatusBar.busy;
+            clicked => { PushData.preview-report(); }
+        }
+    }
+    if PushData.preview != "": Panel {
+        VerticalLayout {
+            padding: 12px;
+            TextInput {
+                text: PushData.preview;
+                read-only: true;
+                color: Theme.text;
+                wrap: word-wrap;
+                single-line: false;
+            }
+        }
+    }
+    Hint {
+        x: 16px;
+        text: @tr("Each channel receives the report in its own language. Data comes from what the machines have uploaded so far.");
+    }
+}

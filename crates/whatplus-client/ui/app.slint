@@ -1,0 +1,75 @@
+// 主視窗：左側導覽、右側頁面。頁面內容全部由 state.slint 的 global 提供。
+import { Palette } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Nav, Page, StatusBar } from "state.slint";
+import { Sidebar } from "widgets/sidebar.slint";
+import { ConnectionPage } from "pages/connection.slint";
+import { StatusPage } from "pages/status.slint";
+import { PushPage } from "pages/push.slint";
+import { SchedulesPage } from "pages/schedules.slint";
+import { DestinationsPage } from "pages/destinations.slint";
+import { MachinesPage } from "pages/machines.slint";
+import { PreferencesPage } from "pages/preferences.slint";
+
+export { Theme }
+export { Page, Nav, StatusBar, CheckItem, Content, KeyValueRow, ConnData, StatusData, PushData, ScheduleRow, ScheduleData, DestinationRow, DestData, MachineRow, MachineData, Prefs } from "state.slint";
+
+export component AppWindow inherits Window {
+    // 0 = 深色、1 = 淺色、2 = 跟隨系統
+    in property <int> theme-mode: 0;
+    property <bool> system-dark: true;
+    title: "WHAT Plus";
+    icon: @image-url("../assets/icon.png");
+    min-width: 900px;
+    min-height: 600px;
+    preferred-width: 1080px;
+    preferred-height: 760px;
+    background: Theme.window-bg;
+    default-font-size: Theme.font-normal;
+
+    init => {
+        root.system-dark = Palette.color-scheme != ColorScheme.light;
+        root.apply-theme();
+    }
+    changed theme-mode => {
+        root.apply-theme();
+    }
+
+    function apply-theme() {
+        Theme.dark = root.theme-mode == 0 || (root.theme-mode == 2 && root.system-dark);
+        Palette.color-scheme = Theme.dark ? ColorScheme.dark : ColorScheme.light;
+    }
+
+    HorizontalLayout {
+        Sidebar {
+            width: 200px;
+        }
+        Rectangle {
+            width: 1px;
+            background: Theme.divider;
+        }
+        VerticalLayout {
+            horizontal-stretch: 1;
+            if StatusBar.message != "": Rectangle {
+                height: msg.preferred-height + 12px;
+                background: StatusBar.message-is-error ? Theme.danger.with-alpha(0.18) : Theme.accent.with-alpha(0.15);
+                msg := Text {
+                    x: Theme.page-padding;
+                    width: parent.width - 2 * Theme.page-padding;
+                    text: StatusBar.message;
+                    color: Theme.text;
+                    font-size: Theme.font-small;
+                    wrap: word-wrap;
+                    vertical-alignment: center;
+                }
+            }
+            if Nav.page == Page.connection: ConnectionPage { }
+            if Nav.page == Page.status: StatusPage { }
+            if Nav.page == Page.push: PushPage { }
+            if Nav.page == Page.schedules: SchedulesPage { }
+            if Nav.page == Page.destinations: DestinationsPage { }
+            if Nav.page == Page.machines: MachinesPage { }
+            if Nav.page == Page.preferences: PreferencesPage { }
+        }
+    }
+}

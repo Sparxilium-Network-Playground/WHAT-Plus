@@ -1,0 +1,36 @@
+// 伺服器狀態。
+import { Theme } from "../theme.slint";
+import { Button } from "std-widgets.slint";
+import { StatusData } from "../state.slint";
+import { PageFrame, Panel } from "../widgets/common.slint";
+
+export component StatusPage inherits PageFrame {
+    title: @tr("Server status");
+    HorizontalLayout {
+        alignment: start;
+        Button {
+            text: @tr("Refresh");
+            clicked => { StatusData.refresh(); }
+        }
+    }
+    Panel {
+        VerticalLayout {
+            padding: 12px;
+            spacing: 6px;
+            for row in StatusData.rows: HorizontalLayout {
+                spacing: 12px;
+                Text {
+                    width: 180px;
+                    text: row.key;
+                    color: Theme.text-muted;
+                }
+                Text {
+                    horizontal-stretch: 1;
+                    text: row.value;
+                    color: Theme.text;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
+}

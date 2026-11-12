@@ -1,0 +1,319 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: zh_TW\n"
+
+msgid "First connection to this server"
+msgstr "第一次連到這台伺服器"
+
+msgid "Compare this fingerprint with the one shown in the server admin TUI main menu. Only trust it if they are identical."
+msgstr "請與伺服器 Admin TUI 主選單顯示的指紋比對，完全相同才信任。"
+
+msgid "Trust and connect"
+msgstr "信任並連線"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Connection"
+msgstr "連線"
+
+msgid "Server"
+msgstr "伺服器"
+
+msgid "Address"
+msgstr "位址"
+
+msgid "IP or host name of the server on your network"
+msgstr "伺服器在區網上的 IP 或主機名稱"
+
+msgid "Port"
+msgstr "Port"
+
+msgid "Saved fingerprint"
+msgstr "已記住的指紋"
+
+msgid "(none, will ask on first connection)"
+msgstr "（尚無，第一次連線時會詢問）"
+
+msgid "Forget"
+msgstr "忘記"
+
+msgid "Admin key"
+msgstr "管理金鑰"
+
+msgid "Keys in .ssh"
+msgstr ".ssh 中的金鑰"
+
+msgid "Ed25519 keys found in your .ssh folder"
+msgstr "在 .ssh 資料夾找到的 Ed25519 金鑰"
+
+msgid "Private key file"
+msgstr "私鑰檔"
+
+msgid "Browse…"
+msgstr "瀏覽…"
+
+msgid "Passphrase"
+msgstr "Passphrase"
+
+msgid "Only if the key has one. Not saved."
+msgstr "金鑰有設定時才需要，不會儲存。"
+
+msgid "Connect"
+msgstr "連線"
+
+msgid "Disconnect"
+msgstr "中斷連線"
+
+msgid "The connection uses SSH. The server must list this key as an admin key (server admin TUI › Import keys) and allow your IP address."
+msgstr "連線使用 SSH。伺服器必須把這把金鑰設為 admin（伺服器 Admin TUI › Import keys），並允許你的 IP。"
+
+msgid "Discord channels"
+msgstr "Discord 頻道"
+
+msgid "Refresh"
+msgstr "重新整理"
+
+msgid "Test"
+msgstr "測試"
+
+msgid "Disable"
+msgstr "停用"
+
+msgid "Enable"
+msgstr "啟用"
+
+msgid "Delete"
+msgstr "刪除"
+
+msgid "No channels yet."
+msgstr "還沒有頻道。"
+
+msgid "Add a channel"
+msgstr "新增頻道"
+
+msgid "Load servers and channels"
+msgstr "載入 Server 與頻道"
+
+msgid "Discord server"
+msgstr "Discord Server"
+
+msgid "Channel"
+msgstr "頻道"
+
+msgid "Name"
+msgstr "名稱"
+
+msgid "A label for this destination"
+msgstr "這個目的地的名稱"
+
+msgid "Report language"
+msgstr "報告語言"
+
+msgid "Add"
+msgstr "新增"
+
+msgid "Only servers the bot has joined are listed. The bot needs View Channels and Send Messages in the channel."
+msgstr "只會列出 Bot 已加入的 Server。Bot 需要該頻道的「檢視頻道」與「傳送訊息」權限。"
+
+msgid "Machines"
+msgstr "來源機器"
+
+msgid "Admin keys can only be changed in the server admin TUI. Deleting a machine also deletes its uploaded records."
+msgstr "admin 金鑰只能在伺服器 Admin TUI 修改。刪除機器會一併刪除它上傳的紀錄。"
+
+msgid "Add a machine"
+msgstr "新增機器"
+
+msgid "Public key"
+msgstr "公鑰"
+
+msgid "The ssh-ed25519 line shown by the agent's admin TUI"
+msgstr "來源端 TUI 顯示的 ssh-ed25519 那一行"
+
+msgid "Allowed IP ranges"
+msgstr "允許的 IP 範圍"
+
+msgid "Optional, comma-separated, e.g. 192.168.1.20/32"
+msgstr "選填，以逗號分隔，例如 192.168.1.20/32"
+
+msgid "Preferences"
+msgstr "偏好設定"
+
+msgid "Appearance"
+msgstr "外觀"
+
+msgid "Language"
+msgstr "語言"
+
+msgid "Theme"
+msgstr "主題"
+
+msgid "Dark"
+msgstr "深色"
+
+msgid "Light"
+msgstr "淺色"
+
+msgid "Follow system"
+msgstr "跟隨系統"
+
+msgid "About"
+msgstr "關於"
+
+msgid "Settings file: {}"
+msgstr "設定檔：{}"
+
+msgid "WHAT Plus is licensed under AGPL-3.0-or-later. Usage parsing is based on ccusage (MIT)."
+msgstr "WHAT Plus 以 AGPL-3.0-or-later 授權。用量解析使用 ccusage（MIT）。"
+
+msgid "Send report now"
+msgstr "立即發送報告"
+
+msgid "Report"
+msgstr "報告"
+
+msgid "Period"
+msgstr "期間"
+
+msgid "Today"
+msgstr "今天"
+
+msgid "Yesterday"
+msgstr "昨天"
+
+msgid "Last 7 days"
+msgstr "最近 7 天"
+
+msgid "This month"
+msgstr "本月"
+
+msgid "Last month"
+msgstr "上個月"
+
+msgid "Contents"
+msgstr "內容"
+
+msgid "No channels yet. Add one under Discord channels."
+msgstr "還沒有頻道，請先到「Discord 頻道」新增。"
+
+msgid "Send"
+msgstr "發送"
+
+msgid "Reload channels"
+msgstr "重新載入頻道"
+
+msgid "Preview"
+msgstr "預覽"
+
+msgid "Preview language"
+msgstr "預覽語言"
+
+msgid "Each channel receives the report in its own language. Data comes from what the machines have uploaded so far."
+msgstr "每個頻道會收到它自己設定的語言。資料來自各機器目前已上傳的紀錄。"
+
+msgid "New schedule"
+msgstr "新增排程"
+
+msgid "Edit schedule"
+msgstr "編輯排程"
+
+msgid "Repeat"
+msgstr "週期"
+
+msgid "Daily"
+msgstr "每天"
+
+msgid "Weekly"
+msgstr "每週"
+
+msgid "Monthly"
+msgstr "每月"
+
+msgid "Monday"
+msgstr "週一"
+
+msgid "Tuesday"
+msgstr "週二"
+
+msgid "Wednesday"
+msgstr "週三"
+
+msgid "Thursday"
+msgstr "週四"
+
+msgid "Friday"
+msgstr "週五"
+
+msgid "Saturday"
+msgstr "週六"
+
+msgid "Sunday"
+msgstr "週日"
+
+msgid "Time"
+msgstr "時間"
+
+msgid "Server time zone"
+msgstr "伺服器時區"
+
+msgid "Sends the previous day."
+msgstr "發送前一天的報告。"
+
+msgid "Sends the previous 7 days."
+msgstr "發送前 7 天的報告。"
+
+msgid "Sends on the 1st of each month, covering the previous month."
+msgstr "每月 1 日發送上個月的報告。"
+
+msgid "Channels"
+msgstr "頻道"
+
+msgid "Enabled"
+msgstr "啟用"
+
+msgid "Save"
+msgstr "儲存"
+
+msgid "Schedules"
+msgstr "排程"
+
+msgid "No schedules yet."
+msgstr "還沒有排程。"
+
+msgid "Server status"
+msgstr "伺服器狀態"
+
+msgid "Total cost and tokens"
+msgstr "總費用與 token"
+
+msgid "By tool"
+msgstr "各工具"
+
+msgid "By model"
+msgstr "各模型"
+
+msgid "By machine"
+msgstr "各機器"
+
+msgid "Top projects"
+msgstr "專案排行"
+
+msgid "Token details"
+msgstr "Token 明細"
+
+msgid "Not connected"
+msgstr "未連線"
+
+msgid "Reports"
+msgstr "報告"
+
+msgid "Send now"
+msgstr "立即發送"
+
+msgid "Sources"
+msgstr "來源"
+
+msgid "Working…"
+msgstr "處理中…"

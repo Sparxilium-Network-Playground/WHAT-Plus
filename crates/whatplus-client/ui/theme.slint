@@ -1,0 +1,44 @@
+// 色彩與尺寸設計 token。深色為預設，淺色由 Theme.dark 切換。
+import { Palette } from "std-widgets.slint";
+
+export global Theme {
+    in-out property <bool> dark: true;
+    in-out property <bool> compact: true;
+
+    out property <color> window-bg: dark ? #161b26 : #f4f6fa;
+    out property <color> sidebar-bg: dark ? #161b26 : #eef1f6;
+    out property <color> panel-bg: dark ? #1d2432 : #ffffff;
+    out property <color> panel-border: dark ? #2a3344 : #dde2ea;
+    out property <color> divider: dark ? #303a4d : #d5dbe5;
+    out property <color> text: dark ? #e6e9ef : #1d2430;
+    out property <color> text-muted: dark ? #9aa3b2 : #5d6878;
+    out property <color> text-faint: dark ? #6c7686 : #8a94a3;
+    out property <color> accent: dark ? #4f8fd6 : #2f6fb8;
+    out property <color> nav-selected: dark ? #2c4a6e : #d3e3f6;
+    out property <color> nav-hover: dark ? #222b3a : #e2e8f1;
+    out property <color> warning: dark ? #e0a84f : #b5761a;
+    out property <color> danger: dark ? #e06c6c : #c0392b;
+    out property <color> good: dark ? #5fbf8a : #2e8b57;
+
+    // 圖表：各來源的顏色（色盲友善的橘／藍／紫紅，取自 Okabe–Ito 色系）。
+    out property <color> series-claude: dark ? #d98a4e : #c96f2e;
+    out property <color> series-codex: dark ? #5b9bd5 : #2f6fb8;
+    out property <color> series-antigravity: dark ? #c987b8 : #a5528f;
+
+    // 依來源索引（0 = Claude Code、1 = Codex、2 = Antigravity）取顏色。
+    public pure function series(index: int) -> color {
+        index == 1 ? series-codex : index == 2 ? series-antigravity : series-claude
+    }
+    out property <color> chart-grid: dark ? #283142 : #e6eaf0;
+    out property <color> chart-hover: dark ? #ffffff18 : #0000000f;
+
+    out property <length> row-height: compact ? 34px : 42px;
+    out property <length> gap: compact ? 8px : 12px;
+    out property <length> page-padding: compact ? 16px : 22px;
+    out property <length> radius: 6px;
+
+    out property <length> font-small: 12px;
+    out property <length> font-normal: 14px;
+    out property <length> font-title: 20px;
+    out property <length> font-stat: 24px;
+}

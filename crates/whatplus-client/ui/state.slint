@@ -1,0 +1,158 @@
+// 前後端介面：每頁一個 global。Rust 只寫入已格式化好的字串。
+
+export enum Page { connection, status, push, schedules, destinations, machines, preferences }
+
+export global Nav {
+    in-out property <Page> page: Page.connection;
+}
+
+export global StatusBar {
+    in-out property <string> message;
+    in-out property <bool> message-is-error;
+    in-out property <bool> busy;
+    in-out property <bool> connected;
+    in-out property <string> connected-as;
+}
+
+export struct CheckItem {
+    id: int,
+    label: string,
+    checked: bool,
+}
+
+export struct Content {
+    totals: bool,
+    by-tool: bool,
+    by-model: bool,
+    by-machine: bool,
+    top-projects: bool,
+    tokens: bool,
+}
+
+export struct KeyValueRow {
+    key: string,
+    value: string,
+}
+
+export global ConnData {
+    in-out property <string> host;
+    in-out property <string> port;
+    in-out property <string> key-path;
+    in-out property <string> passphrase;
+    in property <[string]> key-files;
+    in-out property <int> key-index: -1;
+    in property <string> key-info;
+    in property <string> known-fingerprint;
+    // 非空時顯示「確認伺服器指紋」面板。
+    in property <string> pending-fingerprint;
+    callback connect();
+    callback disconnect();
+    callback trust();
+    callback reject();
+    callback forget();
+    callback browse();
+    callback pick-key(int);
+}
+
+export global StatusData {
+    in property <[KeyValueRow]> rows;
+    callback refresh();
+}
+
+export global PushData {
+    in-out property <int> range-index: 1;
+    in-out property <int> language-index: 0;
+    in-out property <Content> content: { totals: true, by-tool: true, by-model: true, by-machine: true, top-projects: false, tokens: true };
+    in-out property <[CheckItem]> destinations;
+    in property <string> preview;
+    callback refresh();
+    callback preview-report();
+    callback send-report();
+}
+
+export struct ScheduleRow {
+    id: int,
+    name: string,
+    summary: string,
+    last-run: string,
+    enabled: bool,
+}
+
+export global ScheduleData {
+    in property <[ScheduleRow]> rows;
+    // -1 = 新增中
+    in-out property <int> selected: -1;
+    in-out property <string> name;
+    // 0 = 每日、1 = 每週、2 = 每月
+    in-out property <int> kind-index;
+    // 0 = 週一 … 6 = 週日
+    in-out property <int> weekday-index;
+    in-out property <int> hour: 9;
+    in-out property <int> minute: 0;
+    in-out property <bool> enabled: true;
+    in-out property <Content> content: { totals: true, by-tool: true, by-model: true, by-machine: true, top-projects: false, tokens: true };
+    in-out property <[CheckItem]> destinations;
+    callback refresh();
+    callback select(int);
+    callback new-schedule();
+    callback save();
+    callback delete();
+}
+
+export struct DestinationRow {
+    id: int,
+    name: string,
+    channel: string,
+    language: string,
+    result: string,
+    enabled: bool,
+}
+
+export global DestData {
+    in property <[DestinationRow]> rows;
+    in property <[string]> guilds;
+    in property <[string]> channels;
+    in-out property <int> guild-index: -1;
+    in-out property <int> channel-index: -1;
+    in-out property <string> name;
+    in-out property <int> language-index: 0;
+    callback refresh();
+    callback load-channels();
+    callback guild-changed(int);
+    callback add();
+    callback test(int);
+    callback toggle(int);
+    callback delete(int);
+}
+
+export struct MachineRow {
+    id: int,
+    name: string,
+    role: string,
+    fingerprint: string,
+    records: string,
+    last-seen: string,
+    cidrs: string,
+    enabled: bool,
+    editable: bool,
+}
+
+export global MachineData {
+    in property <[MachineRow]> rows;
+    in-out property <string> name;
+    in-out property <string> public-key;
+    in-out property <string> cidrs;
+    callback refresh();
+    callback add();
+    callback toggle(int);
+    callback delete(int);
+}
+
+export global Prefs {
+    // 0 = 繁體中文、1 = English
+    in-out property <int> language-index;
+    // 0 = 深色、1 = 淺色、2 = 跟隨系統
+    in-out property <int> theme-index;
+    in property <string> settings-path;
+    callback changed();
+}

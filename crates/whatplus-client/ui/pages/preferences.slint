@@ -1,0 +1,37 @@
+// 偏好設定：介面語言、主題。
+import { Theme } from "../theme.slint";
+import { ComboBox } from "std-widgets.slint";
+import { Prefs } from "../state.slint";
+import { PageFrame, SectionHeader, FormRow, Hint } from "../widgets/common.slint";
+
+export component PreferencesPage inherits PageFrame {
+    title: @tr("Preferences");
+    SectionHeader { text: @tr("Appearance"); }
+    FormRow {
+        label: @tr("Language");
+        ComboBox {
+            width: 180px;
+            model: ["繁體中文", "English"];
+            current-index <=> Prefs.language-index;
+            selected(v) => { Prefs.changed(); }
+        }
+    }
+    FormRow {
+        label: @tr("Theme");
+        ComboBox {
+            width: 180px;
+            model: [@tr("Dark"), @tr("Light"), @tr("Follow system")];
+            current-index <=> Prefs.theme-index;
+            selected(v) => { Prefs.changed(); }
+        }
+    }
+    SectionHeader { text: @tr("About"); }
+    Hint {
+        x: 16px;
+        text: @tr("Settings file: {}", Prefs.settings-path);
+    }
+    Hint {
+        x: 16px;
+        text: @tr("WHAT Plus is licensed under AGPL-3.0-or-later. Usage parsing is based on ccusage (MIT).");
+    }
+}

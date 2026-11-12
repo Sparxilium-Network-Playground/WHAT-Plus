@@ -1,0 +1,33 @@
+[package]
+name = "whatplus-client"
+description = "WHAT Plus 管理客戶端（Slint，Windows）：設定報告排程、Discord 頻道與來源機器"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+build = "build.rs"
+
+[[bin]]
+name = "whatplus-client"
+path = "src/main.rs"
+
+[dependencies]
+whatplus-proto.workspace = true
+whatplus-ssh.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+jiff.workspace = true
+tokio.workspace = true
+slint = "1.18"
+rfd = { version = "0.18", default-features = false, features = ["xdg-portal"] }
+directories = "6"
+
+[build-dependencies]
+slint-build = "1.18"
+
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1"
+
+[dev-dependencies]
+tempfile.workspace = true

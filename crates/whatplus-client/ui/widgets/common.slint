@@ -1,0 +1,190 @@
+// 共用小元件（樣式同 WHAT）：頁面外框、區段標題、表單列、面板、勾選清單、內容選項。
+import { Theme } from "../theme.slint";
+import { CheckBox, ScrollView } from "std-widgets.slint";
+import { CheckItem, Content } from "../state.slint";
+
+export component Panel inherits Rectangle {
+    background: Theme.panel-bg;
+    border-color: Theme.panel-border;
+    border-width: 1px;
+    border-radius: Theme.radius;
+}
+
+// 頁面：標題＋可捲動內容。
+export component PageFrame inherits VerticalLayout {
+    in property <string> title;
+    padding: Theme.page-padding;
+    spacing: Theme.gap;
+    HorizontalLayout {
+        spacing: 8px;
+        Text {
+            text: root.title;
+            color: Theme.text;
+            font-size: Theme.font-title;
+            font-weight: 700;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+    }
+    ScrollView {
+        vertical-stretch: 1;
+        VerticalLayout {
+            alignment: start;
+            spacing: Theme.gap;
+            padding-right: 12px;
+            @children
+        }
+    }
+}
+
+export component SectionHeader inherits HorizontalLayout {
+    in property <string> text;
+    spacing: 10px;
+    padding-top: 6px;
+    Text {
+        text: root.text;
+        color: Theme.text-muted;
+        font-size: Theme.font-normal;
+        font-weight: 600;
+        vertical-alignment: center;
+    }
+    VerticalLayout {
+        alignment: center;
+        horizontal-stretch: 1;
+        Rectangle {
+            height: 1px;
+            background: Theme.divider;
+        }
+    }
+}
+
+// 表單列：左側標籤、右側控制項。
+export component FormRow inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> hint;
+    in property <length> label-width: 170px;
+    padding-left: 16px;
+    spacing: 12px;
+    min-height: Theme.row-height;
+    VerticalLayout {
+        width: root.label-width;
+        alignment: center;
+        Text {
+            text: root.label;
+            color: Theme.text;
+            font-size: Theme.font-normal;
+            wrap: word-wrap;
+        }
+        if root.hint != "": Text {
+            text: root.hint;
+            color: Theme.text-faint;
+            font-size: Theme.font-small;
+            wrap: word-wrap;
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        horizontal-stretch: 1;
+        HorizontalLayout {
+            alignment: start;
+            spacing: 8px;
+            @children
+        }
+    }
+}
+
+export component Hint inherits Text {
+    color: Theme.text-faint;
+    font-size: Theme.font-small;
+    wrap: word-wrap;
+}
+
+// 可勾選的清單（例如報告的目的地）。
+export component CheckList inherits VerticalLayout {
+    in-out property <[CheckItem]> items;
+    in property <string> empty-text;
+    spacing: 2px;
+    for item[i] in root.items: CheckBox {
+        text: item.label;
+        checked: item.checked;
+        toggled => {
+            root.items[i].checked = self.checked;
+        }
+    }
+    if root.items.length == 0: Hint {
+        text: root.empty-text;
+    }
+}
+
+// 報告內容選項。
+export component ContentOptions inherits VerticalLayout {
+    in-out property <Content> content;
+    spacing: 2px;
+    CheckBox {
+        text: @tr("Total cost and tokens");
+        checked: root.content.totals;
+        toggled => { root.content.totals = self.checked; }
+    }
+    CheckBox {
+        text: @tr("By tool");
+        checked: root.content.by-tool;
+        toggled => { root.content.by-tool = self.checked; }
+    }
+    CheckBox {
+        text: @tr("By model");
+        checked: root.content.by-model;
+        toggled => { root.content.by-model = self.checked; }
+    }
+    CheckBox {
+        text: @tr("By machine");
+        checked: root.content.by-machine;
+        toggled => { root.content.by-machine = self.checked; }
+    }
+    CheckBox {
+        text: @tr("Top projects");
+        checked: root.content.top-projects;
+        toggled => { root.content.top-projects = self.checked; }
+    }
+    CheckBox {
+        text: @tr("Token details");
+        checked: root.content.tokens;
+        toggled => { root.content.tokens = self.checked; }
+    }
+}
+
+// 表格的一列：左側主要文字＋次要文字，右側放按鈕。
+export component ListRow inherits Rectangle {
+    in property <string> title;
+    in property <string> detail;
+    in property <bool> selected;
+    in property <bool> dimmed;
+    callback clicked();
+    min-height: Theme.row-height + 10px;
+    border-radius: 4px;
+    background: root.selected ? Theme.nav-selected : (touch.has-hover ? Theme.nav-hover : transparent);
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 6px;
+        spacing: 8px;
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            Text {
+                text: root.title;
+                color: root.dimmed ? Theme.text-faint : Theme.text;
+                font-weight: 600;
+                overflow: elide;
+            }
+            Text {
+                text: root.detail;
+                color: Theme.text-faint;
+                font-size: Theme.font-small;
+                overflow: elide;
+            }
+        }
+        @children
+    }
+}

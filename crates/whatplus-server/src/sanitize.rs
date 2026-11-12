@@ -3,7 +3,8 @@
 //! 所有來自來源端的資料值（模型、專案、機器名稱）都要經過 [`clean`]：
 //! 移除控制字元、跳脫 Markdown、中和 mention、依字元數截斷。
 
-const MARKDOWN: &[char] = &['\\', '*', '_', '~', '`', '|', '>', '#', '[', ']', '(', ')', '-', ':'];
+// 不跳脫 `-` 與 `:`：資料值不會出現在行首，而模型名稱常含這兩個字元，跳脫後很難讀。
+const MARKDOWN: &[char] = &['\\', '*', '_', '~', '`', '|', '>', '#', '[', ']', '(', ')'];
 const ZERO_WIDTH_SPACE: char = '\u{200B}';
 
 pub fn clean(raw: &str, max_chars: usize) -> String {

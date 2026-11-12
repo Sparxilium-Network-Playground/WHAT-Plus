@@ -1,0 +1,101 @@
+// Discord 頻道：目前的目的地＋從 Bot 所在的 Server 挑選新頻道。
+import { Theme } from "../theme.slint";
+import { Button, ComboBox, LineEdit } from "std-widgets.slint";
+import { DestData, StatusBar } from "../state.slint";
+import { PageFrame, SectionHeader, FormRow, Panel, Hint, ListRow } from "../widgets/common.slint";
+
+export component DestinationsPage inherits PageFrame {
+    title: @tr("Discord channels");
+    HorizontalLayout {
+        alignment: start;
+        Button {
+            text: @tr("Refresh");
+            clicked => { DestData.refresh(); }
+        }
+    }
+    Panel {
+        VerticalLayout {
+            padding: 6px;
+            for row in DestData.rows: ListRow {
+                title: row.name + "  (" + row.language + ")";
+                detail: row.channel + "  ·  " + row.result;
+                dimmed: !row.enabled;
+                Button {
+                    text: @tr("Test");
+                    clicked => { DestData.test(row.id); }
+                }
+                Button {
+                    text: row.enabled ? @tr("Disable") : @tr("Enable");
+                    clicked => { DestData.toggle(row.id); }
+                }
+                Button {
+                    text: @tr("Delete");
+                    clicked => { DestData.delete(row.id); }
+                }
+            }
+            if DestData.rows.length == 0: Hint {
+                text: @tr("No channels yet.");
+            }
+        }
+    }
+
+    SectionHeader { text: @tr("Add a channel"); }
+    HorizontalLayout {
+        padding-left: 16px;
+        alignment: start;
+        Button {
+            text: @tr("Load servers and channels");
+            enabled: !StatusBar.busy;
+            clicked => { DestData.load-channels(); }
+        }
+    }
+    FormRow {
+        label: @tr("Discord server");
+        ComboBox {
+            width: 300px;
+            model: DestData.guilds;
+            current-index <=> DestData.guild-index;
+            enabled: DestData.guilds.length > 0;
+            selected(v) => { DestData.guild-changed(self.current-index); }
+        }
+    }
+    FormRow {
+        label: @tr("Channel");
+        ComboBox {
+            width: 300px;
+            model: DestData.channels;
+            current-index <=> DestData.channel-index;
+            enabled: DestData.channels.length > 0;
+        }
+    }
+    FormRow {
+        label: @tr("Name");
+        hint: @tr("A label for this destination");
+        LineEdit {
+            width: 240px;
+            text <=> DestData.name;
+        }
+    }
+    FormRow {
+        label: @tr("Report language");
+        ComboBox {
+            width: 160px;
+            model: ["English", "繁體中文"];
+            current-index <=> DestData.language-index;
+        }
+    }
+    HorizontalLayout {
+        padding-left: 16px;
+        alignment: start;
+        Button {
+            text: @tr("Add");
+            primary: true;
+            enabled: !StatusBar.busy && DestData.channel-index >= 0;
+            clicked => { DestData.add(); }
+        }
+    }
+    Hint {
+        x: 16px;
+        text: @tr("Only servers the bot has joined are listed. The bot needs View Channels and Send Messages in the channel.");
+    }
+}

@@ -1,0 +1,123 @@
+// 排程：左側清單、右側編輯表單。
+import { Theme } from "../theme.slint";
+import { Button, ComboBox, LineEdit, SpinBox, CheckBox } from "std-widgets.slint";
+import { ScheduleData, StatusBar } from "../state.slint";
+import { PageFrame, SectionHeader, FormRow, Panel, Hint, CheckList, ContentOptions, ListRow } from "../widgets/common.slint";
+
+component ScheduleForm inherits VerticalLayout {
+    spacing: Theme.gap;
+    SectionHeader {
+        text: ScheduleData.selected < 0 ? @tr("New schedule") : @tr("Edit schedule");
+    }
+    FormRow {
+        label: @tr("Name");
+        LineEdit {
+            width: 240px;
+            text <=> ScheduleData.name;
+        }
+    }
+    FormRow {
+        label: @tr("Repeat");
+        ComboBox {
+            width: 160px;
+            model: [@tr("Daily"), @tr("Weekly"), @tr("Monthly")];
+            current-index <=> ScheduleData.kind-index;
+        }
+        if ScheduleData.kind-index == 1: ComboBox {
+            width: 120px;
+            model: [@tr("Monday"), @tr("Tuesday"), @tr("Wednesday"), @tr("Thursday"), @tr("Friday"), @tr("Saturday"), @tr("Sunday")];
+            current-index <=> ScheduleData.weekday-index;
+        }
+    }
+    FormRow {
+        label: @tr("Time");
+        hint: @tr("Server time zone");
+        SpinBox {
+            width: 90px;
+            minimum: 0;
+            maximum: 23;
+            value <=> ScheduleData.hour;
+        }
+        Text {
+            text: ":";
+            color: Theme.text;
+            vertical-alignment: center;
+        }
+        SpinBox {
+            width: 90px;
+            minimum: 0;
+            maximum: 59;
+            value <=> ScheduleData.minute;
+        }
+    }
+    Hint {
+        x: 16px;
+        text: ScheduleData.kind-index == 0 ? @tr("Sends the previous day.") : ScheduleData.kind-index == 1 ? @tr("Sends the previous 7 days.") : @tr("Sends on the 1st of each month, covering the previous month.");
+    }
+    FormRow {
+        label: @tr("Contents");
+        ContentOptions {
+            content <=> ScheduleData.content;
+        }
+    }
+    FormRow {
+        label: @tr("Channels");
+        CheckList {
+            items <=> ScheduleData.destinations;
+            empty-text: @tr("No channels yet. Add one under Discord channels.");
+        }
+    }
+    FormRow {
+        label: @tr("Enabled");
+        CheckBox {
+            checked <=> ScheduleData.enabled;
+        }
+    }
+    HorizontalLayout {
+        padding-left: 16px;
+        spacing: 8px;
+        alignment: start;
+        Button {
+            text: @tr("Save");
+            primary: true;
+            enabled: !StatusBar.busy;
+            clicked => { ScheduleData.save(); }
+        }
+        if ScheduleData.selected >= 0: Button {
+            text: @tr("Delete");
+            clicked => { ScheduleData.delete(); }
+        }
+    }
+}
+
+export component SchedulesPage inherits PageFrame {
+    title: @tr("Schedules");
+    HorizontalLayout {
+        spacing: 8px;
+        alignment: start;
+        Button {
+            text: @tr("New schedule");
+            clicked => { ScheduleData.new-schedule(); }
+        }
+        Button {
+            text: @tr("Refresh");
+            clicked => { ScheduleData.refresh(); }
+        }
+    }
+    Panel {
+        VerticalLayout {
+            padding: 6px;
+            for row in ScheduleData.rows: ListRow {
+                title: row.name;
+                detail: row.summary + "  ·  " + row.last-run;
+                selected: row.id == ScheduleData.selected;
+                dimmed: !row.enabled;
+                clicked => { ScheduleData.select(row.id); }
+            }
+            if ScheduleData.rows.length == 0: Hint {
+                text: @tr("No schedules yet.");
+            }
+        }
+    }
+    ScheduleForm { }
+}

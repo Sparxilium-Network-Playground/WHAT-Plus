@@ -1,0 +1,140 @@
+// 連線：伺服器位址、私鑰、第一次連線時確認伺服器指紋。
+import { Theme } from "../theme.slint";
+import { Button, LineEdit, ComboBox } from "std-widgets.slint";
+import { ConnData, StatusBar } from "../state.slint";
+import { PageFrame, SectionHeader, FormRow, Panel, Hint } from "../widgets/common.slint";
+
+component TrustPanel inherits Panel {
+    background: Theme.warning.with-alpha(0.12);
+    border-color: Theme.warning;
+    VerticalLayout {
+        padding: 14px;
+        spacing: 8px;
+        Text {
+            text: @tr("First connection to this server");
+            color: Theme.text;
+            font-weight: 700;
+        }
+        Hint {
+            text: @tr("Compare this fingerprint with the one shown in the server admin TUI main menu. Only trust it if they are identical.");
+        }
+        TextInput {
+            text: ConnData.pending-fingerprint;
+            read-only: true;
+            color: Theme.text;
+            font-family: "Consolas";
+            single-line: true;
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            Button {
+                text: @tr("Trust and connect");
+                primary: true;
+                clicked => { ConnData.trust(); }
+            }
+            Button {
+                text: @tr("Cancel");
+                clicked => { ConnData.reject(); }
+            }
+        }
+    }
+}
+
+export component ConnectionPage inherits PageFrame {
+    title: @tr("Connection");
+
+    SectionHeader { text: @tr("Server"); }
+    FormRow {
+        label: @tr("Address");
+        hint: @tr("IP or host name of the server on your network");
+        LineEdit {
+            width: 260px;
+            text <=> ConnData.host;
+            placeholder-text: "192.168.1.10";
+            enabled: !StatusBar.connected;
+        }
+    }
+    FormRow {
+        label: @tr("Port");
+        LineEdit {
+            width: 100px;
+            text <=> ConnData.port;
+            enabled: !StatusBar.connected;
+        }
+    }
+    FormRow {
+        label: @tr("Saved fingerprint");
+        Text {
+            text: ConnData.known-fingerprint == "" ? @tr("(none, will ask on first connection)") : ConnData.known-fingerprint;
+            color: Theme.text-muted;
+            vertical-alignment: center;
+        }
+        if ConnData.known-fingerprint != "" && !StatusBar.connected: Button {
+            text: @tr("Forget");
+            clicked => { ConnData.forget(); }
+        }
+    }
+
+    SectionHeader { text: @tr("Admin key"); }
+    FormRow {
+        label: @tr("Keys in .ssh");
+        hint: @tr("Ed25519 keys found in your .ssh folder");
+        ComboBox {
+            width: 360px;
+            model: ConnData.key-files;
+            current-index <=> ConnData.key-index;
+            enabled: !StatusBar.connected && ConnData.key-files.length > 1;
+            selected(v) => { ConnData.pick-key(self.current-index); }
+        }
+    }
+    FormRow {
+        label: @tr("Private key file");
+        LineEdit {
+            width: 360px;
+            text <=> ConnData.key-path;
+            enabled: !StatusBar.connected;
+        }
+        Button {
+            text: @tr("Browse…");
+            enabled: !StatusBar.connected;
+            clicked => { ConnData.browse(); }
+        }
+    }
+    FormRow {
+        label: @tr("Passphrase");
+        hint: @tr("Only if the key has one. Not saved.");
+        LineEdit {
+            width: 260px;
+            input-type: password;
+            text <=> ConnData.passphrase;
+            enabled: !StatusBar.connected;
+        }
+    }
+    if ConnData.key-info != "": Hint {
+        x: 16px;
+        text: ConnData.key-info;
+    }
+
+    if ConnData.pending-fingerprint != "": TrustPanel { }
+
+    HorizontalLayout {
+        padding-left: 16px;
+        spacing: 8px;
+        alignment: start;
+        if !StatusBar.connected: Button {
+            text: @tr("Connect");
+            primary: true;
+            enabled: !StatusBar.busy;
+            clicked => { ConnData.connect(); }
+        }
+        if StatusBar.connected: Button {
+            text: @tr("Disconnect");
+            clicked => { ConnData.disconnect(); }
+        }
+    }
+    Hint {
+        x: 16px;
+        text: @tr("The connection uses SSH. The server must list this key as an admin key (server admin TUI › Import keys) and allow your IP address.");
+    }
+}
