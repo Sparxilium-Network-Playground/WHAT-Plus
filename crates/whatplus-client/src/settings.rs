@@ -48,17 +48,23 @@ impl SettingsStore {
     /// 預設在 `%APPDATA%\WHATPlus\config`；可用環境變數 `WHATPLUS_CLIENT_CONFIG` 指定檔案（測試用）。
     pub fn new() -> Self {
         if let Some(path) = std::env::var_os("WHATPLUS_CLIENT_CONFIG") {
-            return Self { path: PathBuf::from(path) };
+            return Self {
+                path: PathBuf::from(path),
+            };
         }
         let dir = directories::ProjectDirs::from("", "", "WHATPlus")
             .map(|d| d.config_dir().to_path_buf())
             .unwrap_or_else(|| PathBuf::from("."));
-        Self { path: dir.join("client.json") }
+        Self {
+            path: dir.join("client.json"),
+        }
     }
 
     #[cfg(test)]
     pub fn at(path: &Path) -> Self {
-        Self { path: path.to_path_buf() }
+        Self {
+            path: path.to_path_buf(),
+        }
     }
 
     /// 讀不到或損毀時回傳預設值（損毀檔改名保留，避免覆蓋使用者資料）。
@@ -104,9 +110,12 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let store = SettingsStore::at(&dir.path().join("client.json"));
         assert_eq!(store.load(), ClientSettings::default());
-        let mut s = ClientSettings::default();
-        s.host = "192.168.1.10".into();
-        s.known_hosts.insert(host_key("192.168.1.10", 33445), "SHA256:x".into());
+        let mut s = ClientSettings {
+            host: "192.168.1.10".into(),
+            ..Default::default()
+        };
+        s.known_hosts
+            .insert(host_key("192.168.1.10", 33445), "SHA256:x".into());
         store.save(&s).unwrap();
         assert_eq!(store.load(), s);
         fs::write(store.path(), "{broken").unwrap();

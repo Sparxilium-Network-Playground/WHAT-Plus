@@ -4,7 +4,8 @@ use slint::{ComponentHandle, ModelRc, VecModel};
 use whatplus_proto::{ReportContent, Request, Response, Schedule};
 
 use crate::convert::{
-    checked_ids, content_from_ui, content_to_ui, destination_checks, schedule_fields, schedule_kind, schedule_summary,
+    checked_ids, content_from_ui, content_to_ui, destination_checks, schedule_fields,
+    schedule_kind, schedule_summary,
 };
 use crate::ctx::Ctx;
 use crate::{AppWindow, ScheduleData, ScheduleRow};
@@ -28,7 +29,12 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
         let ctx = ctx.clone();
         data.on_select(move |id| {
             let Some(ui) = ctx.ui.upgrade() else { return };
-            let found = ctx.cache().schedules.iter().find(|s| s.id == id as i64).cloned();
+            let found = ctx
+                .cache()
+                .schedules
+                .iter()
+                .find(|s| s.id == id as i64)
+                .cloned();
             if let Some(s) = found {
                 fill_form(&ctx, &ui, &s);
             }
@@ -47,7 +53,11 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
             if id <= 0 {
                 return;
             }
-            let question = format!("{} \"{}\"?", ctx.t("Delete schedule", "刪除排程"), d.get_name());
+            let question = format!(
+                "{} \"{}\"?",
+                ctx.t("Delete schedule", "刪除排程"),
+                d.get_name()
+            );
             if super::confirm(&ctx, &question) {
                 ctx.call(Request::DeleteSchedule { id }, |ctx, ui, _| {
                     clear_form(ctx, ui);
@@ -82,7 +92,10 @@ fn fill_form(ctx: &Ctx, ui: &AppWindow, s: &Schedule) {
     d.set_minute(minute);
     d.set_enabled(s.enabled);
     d.set_content(content_to_ui(s.content));
-    d.set_destinations(destination_checks(&ctx.cache().destinations, &s.destination_ids));
+    d.set_destinations(destination_checks(
+        &ctx.cache().destinations,
+        &s.destination_ids,
+    ));
 }
 
 fn save(ctx: &Ctx) {
@@ -91,7 +104,12 @@ fn save(ctx: &Ctx) {
     let schedule = Schedule {
         id: d.get_selected().max(0) as i64,
         name: d.get_name().trim().to_string(),
-        kind: schedule_kind(d.get_kind_index(), d.get_weekday_index(), d.get_hour(), d.get_minute()),
+        kind: schedule_kind(
+            d.get_kind_index(),
+            d.get_weekday_index(),
+            d.get_hour(),
+            d.get_minute(),
+        ),
         destination_ids: checked_ids(&d.get_destinations()),
         content: content_from_ui(&d.get_content()),
         enabled: d.get_enabled(),
@@ -112,7 +130,9 @@ fn save(ctx: &Ctx) {
 
 pub fn refresh(ctx: &Ctx) {
     ctx.call(Request::ListSchedules, |ctx, ui, resp| {
-        let Response::Schedules { schedules } = resp else { return };
+        let Response::Schedules { schedules } = resp else {
+            return;
+        };
         let zh = ctx.zh();
         let never = ctx.t("never run", "尚未執行");
         let rows: Vec<ScheduleRow> = schedules
@@ -121,11 +141,16 @@ pub fn refresh(ctx: &Ctx) {
                 id: s.id as i32,
                 name: s.name.clone().into(),
                 summary: schedule_summary(s.kind, zh).into(),
-                last_run: s.last_run_at.clone().unwrap_or_else(|| never.clone()).into(),
+                last_run: s
+                    .last_run_at
+                    .clone()
+                    .unwrap_or_else(|| never.clone())
+                    .into(),
                 enabled: s.enabled,
             })
             .collect();
-        ui.global::<ScheduleData>().set_rows(ModelRc::new(VecModel::from(rows)));
+        ui.global::<ScheduleData>()
+            .set_rows(ModelRc::new(VecModel::from(rows)));
         ctx.cache().schedules = schedules;
     });
 }

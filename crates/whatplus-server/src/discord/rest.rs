@@ -10,7 +10,11 @@ use serde_json::json;
 use whatplus_proto::{DiscordChannel, DiscordGuild};
 
 const API: &str = "https://discord.com/api/v10";
-const USER_AGENT: &str = concat!("DiscordBot (https://github.com, ", env!("CARGO_PKG_VERSION"), ")");
+const USER_AGENT: &str = concat!(
+    "DiscordBot (https://github.com, ",
+    env!("CARGO_PKG_VERSION"),
+    ")"
+);
 
 /// 文字頻道與公告頻道。
 const SENDABLE_CHANNEL_TYPES: [u8; 2] = [0, 5];
@@ -66,7 +70,10 @@ impl Rest {
             .map_err(|e| anyhow!("Discord request failed: {e}"))?;
         let status = resp.status().as_u16();
         if status != 200 {
-            bail!("Discord API returned HTTP {status} for {}", redact_path(path));
+            bail!(
+                "Discord API returned HTTP {status} for {}",
+                redact_path(path)
+            );
         }
         Ok(resp.body_mut().read_json()?)
     }
@@ -86,7 +93,10 @@ impl Rest {
                 name: g.name,
                 channels: channels
                     .into_iter()
-                    .map(|c| DiscordChannel { id: c.id, name: c.name })
+                    .map(|c| DiscordChannel {
+                        id: c.id,
+                        name: c.name,
+                    })
                     .collect(),
             });
         }
@@ -121,7 +131,9 @@ impl Rest {
                     std::thread::sleep(Duration::from_secs_f64(wait));
                 }
                 401 => bail!("Discord rejected the bot token (HTTP 401)"),
-                403 => bail!("the bot has no permission to send messages in this channel (HTTP 403)"),
+                403 => {
+                    bail!("the bot has no permission to send messages in this channel (HTTP 403)")
+                }
                 404 => bail!("channel not found or the bot is not in that server (HTTP 404)"),
                 other => bail!("Discord API returned HTTP {other}"),
             }

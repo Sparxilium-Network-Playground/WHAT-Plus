@@ -1,8 +1,8 @@
 //! Network allowlist：只有這些位址範圍可以連線（握手前檢查）。空清單＝全部拒絕。
 
 use anyhow::Result;
-use whatplus_term::KeyCode;
 use whatplus_ssh::allow::parse_cidr;
+use whatplus_term::KeyCode;
 
 use super::Ctx;
 use whatplus_term::{Term, list_lines};
@@ -14,7 +14,8 @@ pub fn screen(term: &mut Term, ctx: &Ctx) -> Result<()> {
     loop {
         let nets = ctx.store.allowed_networks()?;
         let mut lines = vec![
-            " Connections from addresses outside these ranges are closed before the SSH".to_string(),
+            " Connections from addresses outside these ranges are closed before the SSH"
+                .to_string(),
             " handshake. An empty list refuses everything.".to_string(),
             String::new(),
         ];
@@ -24,7 +25,11 @@ pub fn screen(term: &mut Term, ctx: &Ctx) -> Result<()> {
             cursor = cursor.min(nets.len() - 1);
             lines.extend(list_lines(&nets, cursor));
         }
-        term.draw(TITLE, &lines, "A = add   D = remove   Up/Down = move   Esc = back")?;
+        term.draw(
+            TITLE,
+            &lines,
+            "A = add   D = remove   Up/Down = move   Esc = back",
+        )?;
         match term.key()?.code {
             KeyCode::Up => cursor = cursor.saturating_sub(1),
             KeyCode::Down if !nets.is_empty() => cursor = (cursor + 1).min(nets.len() - 1),
@@ -53,7 +58,8 @@ fn add(term: &mut Term, ctx: &Ctx) -> Result<()> {
     match parse_cidr(&raw) {
         Ok(net) => {
             if net.prefix_len() == 0 {
-                let ok = term.confirm(TITLE, &format!("{net} allows EVERY address. Are you sure?"))?;
+                let ok =
+                    term.confirm(TITLE, &format!("{net} allows EVERY address. Are you sure?"))?;
                 if !ok {
                     return Ok(());
                 }

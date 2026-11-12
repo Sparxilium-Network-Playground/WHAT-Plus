@@ -59,7 +59,9 @@ pub async fn serve_on(listener: TcpListener, app: Arc<App>, host_key: PrivateKey
         let auth = app.auth.current();
         if !auth.has_admin() {
             if !warned_no_admin {
-                tracing::warn!("no admin key is registered; refusing all connections (add one in the admin TUI)");
+                tracing::warn!(
+                    "no admin key is registered; refusing all connections (add one in the admin TUI)"
+                );
                 warned_no_admin = true;
             }
             continue; // socket 在這裡被 drop，連線直接關閉

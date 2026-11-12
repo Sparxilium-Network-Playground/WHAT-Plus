@@ -35,12 +35,19 @@ impl Ctx {
     pub fn warnings(&self) -> Vec<String> {
         let mut out = Vec::new();
         let keys = self.store.list_keys().unwrap_or_default();
-        if !keys.iter().any(|k| k.enabled && k.role == whatplus_proto::Role::Admin) {
-            out.push(" ! No admin key is registered. The service refuses all connections until".into());
+        if !keys
+            .iter()
+            .any(|k| k.enabled && k.role == whatplus_proto::Role::Admin)
+        {
+            out.push(
+                " ! No admin key is registered. The service refuses all connections until".into(),
+            );
             out.push("   you import one (Import keys) and give it the admin role.".into());
         }
         if self.store.allowed_networks().unwrap_or_default().is_empty() {
-            out.push(" ! The network allowlist is empty. Every connection is refused until you".into());
+            out.push(
+                " ! The network allowlist is empty. Every connection is refused until you".into(),
+            );
             out.push("   add a range such as 192.168.0.0/16 (Network allowlist).".into());
         }
         out
@@ -97,7 +104,10 @@ fn restart(term: &mut Term, ctx: &Ctx) -> Result<()> {
                 docker-compose.yml are NOT applied by this; use docker compose up -d instead.";
     if term.confirm("Restart service", text)? {
         ctx.store.request_restart()?;
-        term.message("Restart service", "Restart requested. The service restarts within a few seconds.")?;
+        term.message(
+            "Restart service",
+            "Restart requested. The service restarts within a few seconds.",
+        )?;
     }
     Ok(())
 }

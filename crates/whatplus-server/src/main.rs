@@ -30,7 +30,10 @@ fn main() -> ExitCode {
         Ok(s) => s,
         Err(e) => {
             eprintln!("Configuration error: {e:#}");
-            eprintln!("Action: fix {} (run the setup script to create it).", path.display());
+            eprintln!(
+                "Action: fix {} (run the setup script to create it).",
+                path.display()
+            );
             return ExitCode::from(2);
         }
     };

@@ -28,13 +28,18 @@ pub struct Store {
 
 impl Store {
     pub fn open(path: &Path) -> Result<Self> {
-        if let Some(parent) = path.parent() {
-            if !parent.as_os_str().is_empty() && !parent.exists() {
-                bail!("database directory {} does not exist", parent.display());
-            }
+        if let Some(parent) = path.parent()
+            && !parent.as_os_str().is_empty()
+            && !parent.exists()
+        {
+            bail!("database directory {} does not exist", parent.display());
         }
-        let conn = Conn::open(path)
-            .with_context(|| format!("cannot open database {} (is the directory writable?)", path.display()))?;
+        let conn = Conn::open(path).with_context(|| {
+            format!(
+                "cannot open database {} (is the directory writable?)",
+                path.display()
+            )
+        })?;
         let store = Self::init(conn)?;
         restrict_permissions(path);
         Ok(store)
@@ -83,7 +88,11 @@ impl Store {
     pub fn revision(&self) -> Result<i64> {
         Ok(self
             .lock()
-            .query_row("SELECT revision FROM configuration_state WHERE id = 1", &[], |r| r.get(0))?
+            .query_row(
+                "SELECT revision FROM configuration_state WHERE id = 1",
+                &[],
+                |r| r.get(0),
+            )?
             .unwrap_or(0))
     }
 }

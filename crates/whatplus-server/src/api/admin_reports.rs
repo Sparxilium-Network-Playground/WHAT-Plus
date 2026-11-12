@@ -94,7 +94,12 @@ pub fn schedules(app: &App) -> ApiResult {
 }
 
 pub fn save_schedule(app: &App, s: &Schedule) -> ApiResult {
-    let known: Vec<i64> = app.store.list_destinations()?.iter().map(|d| d.id).collect();
+    let known: Vec<i64> = app
+        .store
+        .list_destinations()?
+        .iter()
+        .map(|d| d.id)
+        .collect();
     let s = validate::schedule(s, &known)?;
     let id = app.store.save_schedule(&s)?;
     Ok(Response::Saved { id })
@@ -107,7 +112,13 @@ pub fn delete_schedule(app: &App, id: i64) -> ApiResult {
 
 pub fn preview(app: &App, range: ManualRange, content: ReportContent, lang: Language) -> ApiResult {
     let period = manual_period(range, &app.now())?;
-    let text = report::build(&app.store, &period, &app.settings.timezone_name, content, lang)?;
+    let text = report::build(
+        &app.store,
+        &period,
+        &app.settings.timezone_name,
+        content,
+        lang,
+    )?;
     Ok(Response::Preview { text })
 }
 

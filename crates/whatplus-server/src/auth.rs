@@ -98,7 +98,10 @@ impl AuthHolder {
     }
 
     pub fn current(&self) -> Arc<AuthSnapshot> {
-        self.current.read().unwrap_or_else(|p| p.into_inner()).clone()
+        self.current
+            .read()
+            .unwrap_or_else(|p| p.into_inner())
+            .clone()
     }
 
     /// revision 改變時重新載入；回傳是否有更新。
@@ -164,9 +167,18 @@ mod tests {
         assert!(snap.has_admin());
         assert!(snap.ip_allowed("192.168.5.5".parse().unwrap()));
         assert!(!snap.ip_allowed("10.0.0.1".parse().unwrap()));
-        assert!(snap.authenticate("fp1", Some("192.168.1.9".parse().unwrap())).is_some());
-        assert!(snap.authenticate("fp1", Some("192.168.2.9".parse().unwrap())).is_none());
-        assert!(snap.authenticate("fp2", Some("192.168.2.9".parse().unwrap())).is_some());
+        assert!(
+            snap.authenticate("fp1", Some("192.168.1.9".parse().unwrap()))
+                .is_some()
+        );
+        assert!(
+            snap.authenticate("fp1", Some("192.168.2.9".parse().unwrap()))
+                .is_none()
+        );
+        assert!(
+            snap.authenticate("fp2", Some("192.168.2.9".parse().unwrap()))
+                .is_some()
+        );
         assert!(snap.authenticate("nope", None).is_none());
     }
 }

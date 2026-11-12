@@ -52,7 +52,11 @@ pub fn schedule(s: &Schedule, known_destinations: &[i64]) -> Result<Schedule, St
     if s.destination_ids.is_empty() {
         return Err("select at least one destination".into());
     }
-    if let Some(id) = s.destination_ids.iter().find(|id| !known_destinations.contains(id)) {
+    if let Some(id) = s
+        .destination_ids
+        .iter()
+        .find(|id| !known_destinations.contains(id))
+    {
         return Err(format!("destination {id} does not exist"));
     }
     s.destination_ids.sort_unstable();

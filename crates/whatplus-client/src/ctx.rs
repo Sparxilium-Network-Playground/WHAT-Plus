@@ -29,7 +29,10 @@ pub struct Ctx {
 
 impl Ctx {
     pub fn settings(&self) -> ClientSettings {
-        self.settings.lock().unwrap_or_else(|p| p.into_inner()).clone()
+        self.settings
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .clone()
     }
 
     pub fn update_settings(&self, f: impl FnOnce(&mut ClientSettings)) {
@@ -79,16 +82,21 @@ impl Ctx {
     }
 
     /// 送出請求；成功時在 UI 執行緒呼叫 `on_ok`，失敗時顯示錯誤。
-    pub fn call(&self, req: Request, on_ok: impl FnOnce(&Ctx, &AppWindow, Response) + Send + 'static) {
+    pub fn call(
+        &self,
+        req: Request,
+        on_ok: impl FnOnce(&Ctx, &AppWindow, Response) + Send + 'static,
+    ) {
         self.set_busy(true);
         let ctx = self.clone();
-        self.backend.spawn(self.backend.request(req), move |result| {
-            ctx.set_busy(false);
-            let Some(ui) = ctx.ui.upgrade() else { return };
-            match result {
-                Ok(resp) => on_ok(&ctx, &ui, resp),
-                Err(e) => ctx.error(e),
-            }
-        });
+        self.backend
+            .spawn(self.backend.request(req), move |result| {
+                ctx.set_busy(false);
+                let Some(ui) = ctx.ui.upgrade() else { return };
+                match result {
+                    Ok(resp) => on_ok(&ctx, &ui, resp),
+                    Err(e) => ctx.error(e),
+                }
+            });
     }
 }

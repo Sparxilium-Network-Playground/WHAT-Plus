@@ -8,7 +8,9 @@ use crate::params;
 impl Store {
     pub fn allowed_networks(&self) -> Result<Vec<String>> {
         self.lock()
-            .query_map("SELECT cidr FROM allowed_network ORDER BY cidr", &[], |r| r.get(0))
+            .query_map("SELECT cidr FROM allowed_network ORDER BY cidr", &[], |r| {
+                r.get(0)
+            })
     }
 
     /// `cidr` 必須先經 `whatplus_ssh::allow::parse_cidr` 正規化。

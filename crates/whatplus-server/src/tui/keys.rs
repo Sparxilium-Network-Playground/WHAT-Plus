@@ -1,12 +1,12 @@
 //! Authorized keys：列出已註冊的公鑰，啟用／停用、改名、改角色、限制 IP、刪除。
 
 use anyhow::Result;
-use whatplus_term::KeyCode;
 use whatplus_proto::{KeyInfo, Role};
+use whatplus_term::KeyCode;
 
 use super::Ctx;
-use whatplus_term::{Term, checkbox, list_lines};
 use crate::validate;
+use whatplus_term::{Term, checkbox, list_lines};
 
 const TITLE: &str = "Authorized keys";
 
@@ -38,7 +38,9 @@ pub fn screen(term: &mut Term, ctx: &Ctx) -> Result<()> {
             String::new(),
         ];
         if keys.is_empty() {
-            lines.push(" No keys yet. Use \"Import keys from a directory\" in the main menu.".into());
+            lines.push(
+                " No keys yet. Use \"Import keys from a directory\" in the main menu.".into(),
+            );
             term.draw(TITLE, &lines, "Esc = back")?;
             term.key()?;
             return Ok(());
@@ -46,7 +48,11 @@ pub fn screen(term: &mut Term, ctx: &Ctx) -> Result<()> {
         cursor = cursor.min(keys.len() - 1);
         let rows: Vec<String> = keys.iter().map(row).collect();
         lines.extend(list_lines(&rows, cursor));
-        term.draw(TITLE, &lines, "Up/Down = move   Space = enable/disable   Enter = edit   Esc = back")?;
+        term.draw(
+            TITLE,
+            &lines,
+            "Up/Down = move   Space = enable/disable   Enter = edit   Esc = back",
+        )?;
         match term.key()?.code {
             KeyCode::Up => cursor = cursor.saturating_sub(1),
             KeyCode::Down => cursor = (cursor + 1).min(keys.len() - 1),
@@ -85,15 +91,26 @@ fn edit(term: &mut Term, ctx: &Ctx, key: &KeyInfo) -> Result<()> {
         format!(" Name:        {}", key.name),
         format!(" Role:        {}", key.role.as_str()),
         format!(" Fingerprint: {}", key.fingerprint),
-        format!(" Public key:  {}", key.public_key.chars().take(70).collect::<String>()),
+        format!(
+            " Public key:  {}",
+            key.public_key.chars().take(70).collect::<String>()
+        ),
         format!(" Records:     {}", key.record_count),
-        format!(" Last seen:   {} {}", key.last_seen_at.as_deref().unwrap_or("never"), key.last_seen_ip.as_deref().unwrap_or("")),
+        format!(
+            " Last seen:   {} {}",
+            key.last_seen_at.as_deref().unwrap_or("never"),
+            key.last_seen_ip.as_deref().unwrap_or("")
+        ),
     ];
     let items: Vec<String> = vec![
         "Rename".into(),
         format!("Change role to {}", other(key.role).as_str()),
         "Restrict to IP ranges".into(),
-        if key.enabled { "Disable".into() } else { "Enable".into() },
+        if key.enabled {
+            "Disable".into()
+        } else {
+            "Enable".into()
+        },
         "Delete (also deletes this machine's usage records)".into(),
         "Back".into(),
     ];
@@ -110,8 +127,14 @@ fn edit(term: &mut Term, ctx: &Ctx, key: &KeyInfo) -> Result<()> {
         1 => {
             let to = other(key.role);
             if key.role == Role::Admin && key.enabled && enabled_admins(ctx)? == 1 {
-                term.message(TITLE, "This is the last enabled admin key; add another admin first.")?;
-            } else if term.confirm(TITLE, &format!("Change \"{}\" to {}?", key.name, to.as_str()))? {
+                term.message(
+                    TITLE,
+                    "This is the last enabled admin key; add another admin first.",
+                )?;
+            } else if term.confirm(
+                TITLE,
+                &format!("Change \"{}\" to {}?", key.name, to.as_str()),
+            )? {
                 ctx.store.set_key_role(key.id, to)?;
             }
         }
@@ -120,7 +143,9 @@ fn edit(term: &mut Term, ctx: &Ctx, key: &KeyInfo) -> Result<()> {
                 "Comma-separated CIDR ranges this key may connect from, e.g. 192.168.1.20/32.",
                 "Leave empty to allow any address in the network allowlist.",
             ];
-            if let Some(raw) = term.prompt(TITLE, &help, "IP ranges", &key.allowed_cidrs.join(","))? {
+            if let Some(raw) =
+                term.prompt(TITLE, &help, "IP ranges", &key.allowed_cidrs.join(","))?
+            {
                 let items: Vec<String> = raw.split(',').map(|s| s.trim().to_string()).collect();
                 let cidrs = validate::cidrs(&items).map_err(anyhow::Error::msg)?;
                 ctx.store.update_key(key.id, &key.name, &cidrs)?;
@@ -129,7 +154,10 @@ fn edit(term: &mut Term, ctx: &Ctx, key: &KeyInfo) -> Result<()> {
         3 => toggle(term, ctx, key)?,
         4 => {
             if key.role == Role::Admin && key.enabled && enabled_admins(ctx)? == 1 {
-                term.message(TITLE, "This is the last enabled admin key; add another admin first.")?;
+                term.message(
+                    TITLE,
+                    "This is the last enabled admin key; add another admin first.",
+                )?;
             } else if term.confirm(
                 TITLE,
                 &format!(

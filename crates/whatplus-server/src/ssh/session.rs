@@ -16,7 +16,12 @@ const HELLO_TIMEOUT: Duration = Duration::from_secs(30);
 /// 兩個請求之間最長的閒置時間。
 const IDLE_TIMEOUT: Duration = Duration::from_secs(600);
 
-pub async fn serve(app: Arc<App>, who: Identity, peer: Option<SocketAddr>, mut stream: ChannelStream<Msg>) {
+pub async fn serve(
+    app: Arc<App>,
+    who: Identity,
+    peer: Option<SocketAddr>,
+    mut stream: ChannelStream<Msg>,
+) {
     match tokio::time::timeout(HELLO_TIMEOUT, read_frame::<_, Request>(&mut stream)).await {
         Ok(Ok(Some(Request::Hello { client, protocol }))) => {
             if protocol != PROTOCOL_VERSION {
@@ -47,14 +52,15 @@ pub async fn serve(app: Arc<App>, who: Identity, peer: Option<SocketAddr>, mut s
     }
 
     loop {
-        let request = match tokio::time::timeout(IDLE_TIMEOUT, read_frame::<_, Request>(&mut stream)).await {
-            Ok(Ok(Some(req))) => req,
-            Ok(Ok(None)) | Err(_) => break,
-            Ok(Err(e)) => {
-                tracing::warn!(?peer, name = %who.name, "session error: {e}");
-                break;
-            }
-        };
+        let request =
+            match tokio::time::timeout(IDLE_TIMEOUT, read_frame::<_, Request>(&mut stream)).await {
+                Ok(Ok(Some(req))) => req,
+                Ok(Ok(None)) | Err(_) => break,
+                Ok(Err(e)) => {
+                    tracing::warn!(?peer, name = %who.name, "session error: {e}");
+                    break;
+                }
+            };
         let name = api::request_name(&request);
         let started = std::time::Instant::now();
         let response = api::handle(&app, &who, request).await;

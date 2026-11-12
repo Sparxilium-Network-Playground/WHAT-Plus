@@ -27,16 +27,14 @@ impl Period {
     /// 給人看的期間，例如 `2026-11-12`、`2026-11-06 – 2026-11-12`、`2026-10`。
     pub fn label(&self) -> String {
         let first = self.start.date();
-        let last = self
-            .end
-            .date()
-            .yesterday()
-            .unwrap_or(first)
-            .max(first);
+        let last = self.end.date().yesterday().unwrap_or(first).max(first);
         if first == last {
             return first.to_string();
         }
-        if first.day() == 1 && last.tomorrow().is_ok_and(|d| d.day() == 1) && first.month() == last.month() {
+        if first.day() == 1
+            && last.tomorrow().is_ok_and(|d| d.day() == 1)
+            && first.month() == last.month()
+        {
             return format!("{:04}-{:02}", first.year(), first.month());
         }
         format!("{first} – {last}")
@@ -96,12 +94,18 @@ pub fn latest_due(kind: ScheduleKind, now: &Zoned) -> Result<Zoned> {
     let tz = now.time_zone().clone();
     let today = now.date();
     let at = |date: Date, hour: u8, minute: u8| -> Result<Zoned> {
-        Ok(date.at(hour as i8, minute as i8, 0, 0).to_zoned(tz.clone())?)
+        Ok(date
+            .at(hour as i8, minute as i8, 0, 0)
+            .to_zoned(tz.clone())?)
     };
     Ok(match kind {
         ScheduleKind::Daily { hour, minute } => {
             let c = at(today, hour, minute)?;
-            if c > *now { at(today.yesterday()?, hour, minute)? } else { c }
+            if c > *now {
+                at(today.yesterday()?, hour, minute)?
+            } else {
+                c
+            }
         }
         ScheduleKind::Weekly {
             weekday,
@@ -112,7 +116,11 @@ pub fn latest_due(kind: ScheduleKind, now: &Zoned) -> Result<Zoned> {
             let back = (current - weekday as i64).rem_euclid(7);
             let date = today.checked_sub(back.days())?;
             let c = at(date, hour, minute)?;
-            if c > *now { at(date.checked_sub(7.days())?, hour, minute)? } else { c }
+            if c > *now {
+                at(date.checked_sub(7.days())?, hour, minute)?
+            } else {
+                c
+            }
         }
         ScheduleKind::Monthly { hour, minute } => {
             let first = first_of_month(today);
@@ -147,7 +155,11 @@ mod tests {
     #[test]
     fn weekly_due() {
         // 2026-11-13 是週五；週一 09:00 → 2026-11-09。
-        let kind = ScheduleKind::Weekly { weekday: 1, hour: 9, minute: 0 };
+        let kind = ScheduleKind::Weekly {
+            weekday: 1,
+            hour: 9,
+            minute: 0,
+        };
         let now = z("2026-11-13T10:00:00+08:00[Asia/Taipei]");
         let due = latest_due(kind, &now).unwrap();
         assert_eq!(due.date().to_string(), "2026-11-09");
@@ -157,7 +169,10 @@ mod tests {
 
     #[test]
     fn monthly_due_and_label() {
-        let kind = ScheduleKind::Monthly { hour: 0, minute: 30 };
+        let kind = ScheduleKind::Monthly {
+            hour: 0,
+            minute: 30,
+        };
         let now = z("2026-11-01T00:10:00+08:00[Asia/Taipei]");
         let due = latest_due(kind, &now).unwrap();
         assert_eq!(due.date().to_string(), "2026-10-01");
@@ -168,8 +183,14 @@ mod tests {
     #[test]
     fn manual_ranges() {
         let now = z("2026-11-13T10:00:00+08:00[Asia/Taipei]");
-        assert_eq!(manual_period(ManualRange::Today, &now).unwrap().label(), "2026-11-13");
-        assert_eq!(manual_period(ManualRange::LastMonth, &now).unwrap().label(), "2026-10");
+        assert_eq!(
+            manual_period(ManualRange::Today, &now).unwrap().label(),
+            "2026-11-13"
+        );
+        assert_eq!(
+            manual_period(ManualRange::LastMonth, &now).unwrap().label(),
+            "2026-10"
+        );
         assert_eq!(
             manual_period(ManualRange::Last7Days, &now).unwrap().label(),
             "2026-11-07 – 2026-11-13"

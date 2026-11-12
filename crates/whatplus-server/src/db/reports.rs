@@ -66,7 +66,10 @@ impl Store {
 
     pub fn delete_destination(&self, id: i64) -> Result<()> {
         self.mutate(|tx| {
-            tx.execute("DELETE FROM destination_health WHERE destination_id = ?", params![id])?;
+            tx.execute(
+                "DELETE FROM destination_health WHERE destination_id = ?",
+                params![id],
+            )?;
             tx.execute("DELETE FROM discord_destination WHERE id = ?", params![id])?;
             Ok(())
         })
@@ -130,7 +133,10 @@ impl Store {
 
     pub fn delete_schedule(&self, id: i64) -> Result<()> {
         self.mutate(|tx| {
-            tx.execute("DELETE FROM schedule_run WHERE schedule_id = ?", params![id])?;
+            tx.execute(
+                "DELETE FROM schedule_run WHERE schedule_id = ?",
+                params![id],
+            )?;
             tx.execute("DELETE FROM report_schedule WHERE id = ?", params![id])?;
             Ok(())
         })

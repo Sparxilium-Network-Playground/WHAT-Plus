@@ -32,19 +32,32 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
     // 第 0 項是「其他檔案」，代表手動輸入或瀏覽選擇的路徑。
     let mut labels = vec![ctx.t("(other file)", "（其他檔案）")];
     labels.extend(found.iter().map(|k| {
-        let name = k.path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-        format!("{name}  {}{}", k.comment, if k.encrypted { "  🔒" } else { "" })
+        let name = k
+            .path
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+        format!(
+            "{name}  {}{}",
+            k.comment,
+            if k.encrypted { "  🔒" } else { "" }
+        )
     }));
     data.set_key_files(strings(labels));
     let paths: Vec<PathBuf> = found.into_iter().map(|k| k.path).collect();
-    let current = paths.iter().position(|p| p.display().to_string() == s.key_path);
+    let current = paths
+        .iter()
+        .position(|p| p.display().to_string() == s.key_path);
     data.set_key_index(current.map(|i| i as i32 + 1).unwrap_or(0));
     {
         let ui_weak = ui.as_weak();
         data.on_pick_key(move |i| {
-            let Some(idx) = (i as usize).checked_sub(1) else { return };
+            let Some(idx) = (i as usize).checked_sub(1) else {
+                return;
+            };
             if let (Some(ui), Some(p)) = (ui_weak.upgrade(), paths.get(idx)) {
-                ui.global::<ConnData>().set_key_path(p.display().to_string().into());
+                ui.global::<ConnData>()
+                    .set_key_path(p.display().to_string().into());
             }
         });
     }
@@ -56,7 +69,8 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
                 dialog = dialog.set_directory(dir);
             }
             if let (Some(ui), Some(path)) = (ui_weak.upgrade(), dialog.pick_file()) {
-                ui.global::<ConnData>().set_key_path(path.display().to_string().into());
+                ui.global::<ConnData>()
+                    .set_key_path(path.display().to_string().into());
             }
         });
     }
@@ -116,7 +130,12 @@ fn address(ui: &AppWindow) -> (String, u16) {
 
 fn refresh_known(ctx: &Ctx, ui: &AppWindow) {
     let (host, port) = address(ui);
-    let known = ctx.settings().known_hosts.get(&host_key(&host, port)).cloned().unwrap_or_default();
+    let known = ctx
+        .settings()
+        .known_hosts
+        .get(&host_key(&host, port))
+        .cloned()
+        .unwrap_or_default();
     ui.global::<ConnData>().set_known_fingerprint(known.into());
 }
 
@@ -125,30 +144,53 @@ fn connect(ctx: &Ctx, pending: &Pending) {
     let data = ui.global::<ConnData>();
     let (host, port) = address(&ui);
     if host.is_empty() || port == 0 {
-        ctx.error(ctx.t("Enter the server address and a valid port.", "請輸入伺服器位址與正確的 port。"));
+        ctx.error(ctx.t(
+            "Enter the server address and a valid port.",
+            "請輸入伺服器位址與正確的 port。",
+        ));
         return;
     }
     let key_path = data.get_key_path().trim().to_string();
     let passphrase = data.get_passphrase().to_string();
-    let key = match keys::load_private_key(key_path.as_ref(), Some(passphrase.as_str()).filter(|p| !p.is_empty())) {
+    let key = match keys::load_private_key(
+        key_path.as_ref(),
+        Some(passphrase.as_str()).filter(|p| !p.is_empty()),
+    ) {
         Ok(k) => Arc::new(k),
         Err(KeyError::NeedsPassphrase) => {
-            ctx.error(ctx.t("This key has a passphrase; enter it below.", "這把金鑰有 passphrase，請在下方輸入。"));
+            ctx.error(ctx.t(
+                "This key has a passphrase; enter it below.",
+                "這把金鑰有 passphrase，請在下方輸入。",
+            ));
             return;
         }
         Err(e) => {
-            ctx.error(format!("{}: {e}", ctx.t("Cannot use this key", "無法使用這把金鑰")));
+            ctx.error(format!(
+                "{}: {e}",
+                ctx.t("Cannot use this key", "無法使用這把金鑰")
+            ));
             return;
         }
     };
-    data.set_key_info(format!("{}  {}", keys::fingerprint(key.public_key()), keys::to_line(key.public_key())).into());
+    data.set_key_info(
+        format!(
+            "{}  {}",
+            keys::fingerprint(key.public_key()),
+            keys::to_line(key.public_key())
+        )
+        .into(),
+    );
     ctx.update_settings(|s| {
         s.host = host.clone();
         s.port = port;
         s.key_path = key_path.clone();
     });
     refresh_known(ctx, &ui);
-    let known = ctx.settings().known_hosts.get(&host_key(&host, port)).cloned();
+    let known = ctx
+        .settings()
+        .known_hosts
+        .get(&host_key(&host, port))
+        .cloned();
     let opts = ConnectOptions {
         host,
         port,
@@ -161,11 +203,17 @@ fn connect(ctx: &Ctx, pending: &Pending) {
 
 fn trust(ctx: &Ctx, pending: &Pending) {
     let Some(ui) = ctx.ui.upgrade() else { return };
-    let fp = ui.global::<ConnData>().get_pending_fingerprint().to_string();
+    let fp = ui
+        .global::<ConnData>()
+        .get_pending_fingerprint()
+        .to_string();
     ui.global::<ConnData>().set_pending_fingerprint("".into());
-    let Some(mut opts) = pending.lock().unwrap().take() else { return };
+    let Some(mut opts) = pending.lock().unwrap().take() else {
+        return;
+    };
     ctx.update_settings(|s| {
-        s.known_hosts.insert(host_key(&opts.host, opts.port), fp.clone());
+        s.known_hosts
+            .insert(host_key(&opts.host, opts.port), fp.clone());
     });
     refresh_known(ctx, &ui);
     opts.known_fingerprint = Some(fp);

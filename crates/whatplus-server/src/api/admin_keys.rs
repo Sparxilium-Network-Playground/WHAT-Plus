@@ -66,7 +66,10 @@ pub fn set_enabled(app: &App, id: i64, enabled: bool) -> ApiResult {
 pub fn delete(app: &App, id: i64) -> ApiResult {
     require_agent(app, id)?;
     app.store.delete_key(id)?;
-    tracing::info!(key = id, "agent key and its records deleted by admin client");
+    tracing::info!(
+        key = id,
+        "agent key and its records deleted by admin client"
+    );
     app.reload_auth();
     Ok(Response::Ok)
 }

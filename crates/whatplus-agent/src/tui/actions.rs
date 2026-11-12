@@ -10,7 +10,9 @@ use crate::{collect, daemon, upload};
 pub fn interval(term: &mut Term, ctx: &Ctx) -> Result<()> {
     const TITLE: &str = "Upload interval";
     let mut cfg = ctx.config()?;
-    let help = [format!("Minutes between uploads ({MIN_INTERVAL_MINUTES}-{MAX_INTERVAL_MINUTES}). Default 10.")];
+    let help = [format!(
+        "Minutes between uploads ({MIN_INTERVAL_MINUTES}-{MAX_INTERVAL_MINUTES}). Default 10."
+    )];
     let help: Vec<&str> = help.iter().map(String::as_str).collect();
     let Some(raw) = term.prompt(TITLE, &help, "Minutes", &cfg.interval().to_string())? else {
         return Ok(());
@@ -20,12 +22,19 @@ pub fn interval(term: &mut Term, ctx: &Ctx) -> Result<()> {
             cfg.interval_minutes = n;
             ctx.save(&cfg)
         }
-        _ => term.message(TITLE, "Enter a whole number of minutes in the allowed range."),
+        _ => term.message(
+            TITLE,
+            "Enter a whole number of minutes in the allowed range.",
+        ),
     }
 }
 
 pub fn upload(term: &mut Term, ctx: &Ctx, full: bool) -> Result<()> {
-    let title = if full { "Re-send all records" } else { "Upload now" };
+    let title = if full {
+        "Re-send all records"
+    } else {
+        "Upload now"
+    };
     if full
         && !term.confirm(
             title,
@@ -40,7 +49,10 @@ pub fn upload(term: &mut Term, ctx: &Ctx, full: bool) -> Result<()> {
     state.last_attempt_at = Some(daemon::now());
     let text = match ctx.rt.block_on(upload::run_once(&cfg, full)) {
         Ok(s) => {
-            let msg = format!("OK: sent {} records (server has {})", s.sent, s.server_records);
+            let msg = format!(
+                "OK: sent {} records (server has {})",
+                s.sent, s.server_records
+            );
             state.last_success_at = state.last_attempt_at.clone();
             state.last_result = Some(msg.clone());
             msg
@@ -58,7 +70,9 @@ pub fn upload(term: &mut Term, ctx: &Ctx, full: bool) -> Result<()> {
 pub fn sources(term: &mut Term, ctx: &Ctx) -> Result<()> {
     const TITLE: &str = "Local usage sources";
     working(term, TITLE, "Reading local usage")?;
-    let (_, summaries) = ctx.rt.block_on(async { tokio::task::spawn_blocking(collect::load_all).await })?;
+    let (_, summaries) = ctx
+        .rt
+        .block_on(async { tokio::task::spawn_blocking(collect::load_all).await })?;
     let mut lines = Vec::new();
     for s in summaries {
         lines.push(format!(" {}: {} records", s.name, s.records));

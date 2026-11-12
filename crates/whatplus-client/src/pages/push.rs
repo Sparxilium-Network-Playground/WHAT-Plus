@@ -3,7 +3,9 @@
 use slint::ComponentHandle;
 use whatplus_proto::{Request, Response};
 
-use crate::convert::{checked_ids, content_from_ui, destination_checks, language_from_index, range_from_index};
+use crate::convert::{
+    checked_ids, content_from_ui, destination_checks, language_from_index, range_from_index,
+};
 use crate::ctx::Ctx;
 use crate::{AppWindow, PushData};
 
@@ -49,7 +51,11 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
                 if let Response::Sent { results } = resp {
                     let failed = results.iter().any(|r| r.contains("FAILED"));
                     let text = results.join("\n");
-                    if failed { ctx.error(text) } else { ctx.info(text) }
+                    if failed {
+                        ctx.error(text)
+                    } else {
+                        ctx.info(text)
+                    }
                 }
             });
         });

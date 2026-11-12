@@ -46,9 +46,16 @@ pub fn aggregate(records: &[StoredRecord]) -> ReportData {
         data.totals.add_record(r);
         data.pricing_missing |= r.pricing_missing;
         tools.entry(r.source).or_default().add_record(r);
-        let model = if r.model.is_empty() { "unknown".to_string() } else { r.model.clone() };
+        let model = if r.model.is_empty() {
+            "unknown".to_string()
+        } else {
+            r.model.clone()
+        };
         models.entry(model).or_default().add_record(r);
-        machines.entry(stored.agent_name.clone()).or_default().add_record(r);
+        machines
+            .entry(stored.agent_name.clone())
+            .or_default()
+            .add_record(r);
         projects
             .entry((stored.agent_name.clone(), r.project.clone()))
             .or_default()
@@ -91,7 +98,10 @@ mod tests {
                 model: model.into(),
                 project: "p".into(),
                 session_id: "s".into(),
-                tokens: TokenCounts { input: 1, ..Default::default() },
+                tokens: TokenCounts {
+                    input: 1,
+                    ..Default::default()
+                },
                 cost_usd: cost,
                 pricing_missing: false,
             },

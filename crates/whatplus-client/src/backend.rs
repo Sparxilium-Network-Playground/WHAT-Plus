@@ -49,7 +49,10 @@ impl Backend {
     }
 
     /// 建立連線（取代舊連線）。
-    pub fn connect(&self, opts: ConnectOptions) -> impl Future<Output = Result<Connected, ConnectError>> + Send + 'static {
+    pub fn connect(
+        &self,
+        opts: ConnectOptions,
+    ) -> impl Future<Output = Result<Connected, ConnectError>> + Send + 'static {
         let session = self.session.clone();
         async move {
             let old = session.lock().await.take();
@@ -83,7 +86,10 @@ impl Backend {
     }
 
     /// 送出請求。連線因閒置被關閉時自動重連一次（沿用已確認的指紋）。
-    pub fn request(&self, req: Request) -> impl Future<Output = Result<Response, String>> + Send + 'static {
+    pub fn request(
+        &self,
+        req: Request,
+    ) -> impl Future<Output = Result<Response, String>> + Send + 'static {
         let session = self.session.clone();
         async move {
             let mut guard = session.lock().await;
@@ -94,7 +100,9 @@ impl Backend {
                 Ok(r) => Ok(r),
                 Err(ConnectError::Network(_) | ConnectError::Timeout) => {
                     let opts = s.opts.clone();
-                    let conn = Connection::connect(opts.clone()).await.map_err(|e| e.to_string())?;
+                    let conn = Connection::connect(opts.clone())
+                        .await
+                        .map_err(|e| e.to_string())?;
                     *guard = Some(Session { conn, opts });
                     let s = guard.as_mut().expect("just set");
                     s.conn.request(req).await.map_err(|e| e.to_string())

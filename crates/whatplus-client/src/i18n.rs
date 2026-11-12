@@ -1,7 +1,11 @@
 //! Rust 端產生的文字翻譯。`.slint` 內的文字用 `@tr` + `lang/zh_TW/.../whatplus-client.po`。
 
 pub fn pick(zh: bool, en: &str, zh_text: &str) -> String {
-    if zh { zh_text.to_string() } else { en.to_string() }
+    if zh {
+        zh_text.to_string()
+    } else {
+        en.to_string()
+    }
 }
 
 /// 切換 Slint 的內嵌翻譯。

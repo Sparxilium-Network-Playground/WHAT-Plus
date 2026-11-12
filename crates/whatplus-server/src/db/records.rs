@@ -99,9 +99,9 @@ impl Store {
     }
 
     pub fn record_count(&self) -> Result<u64> {
-        let n: Option<i64> = self
-            .lock()
-            .query_row("SELECT COUNT(*) FROM usage_record", &[], |r| r.get(0))?;
+        let n: Option<i64> =
+            self.lock()
+                .query_row("SELECT COUNT(*) FROM usage_record", &[], |r| r.get(0))?;
         Ok(n.unwrap_or(0) as u64)
     }
 
@@ -178,14 +178,19 @@ mod tests {
         let a = sample("2026-11-01T00:00:00Z", 1.0);
         let b = sample("2026-11-02T00:00:00Z", 2.0);
         store.upsert_records(id, &[a.clone(), b]).unwrap();
-        store.upsert_records(id, &[sample("2026-11-01T00:00:00Z", 3.0)]).unwrap();
+        store
+            .upsert_records(id, &[sample("2026-11-01T00:00:00Z", 3.0)])
+            .unwrap();
 
         let (latest, count) = store.upload_state(id).unwrap();
         assert_eq!(count, 2);
         assert_eq!(latest, Some("2026-11-02T00:00:00Z".parse().unwrap()));
 
         let rows = store
-            .records_between("2026-11-01T00:00:00Z".parse().unwrap(), "2026-11-02T00:00:00Z".parse().unwrap())
+            .records_between(
+                "2026-11-01T00:00:00Z".parse().unwrap(),
+                "2026-11-02T00:00:00Z".parse().unwrap(),
+            )
             .unwrap();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].record.cost_usd, 3.0);
@@ -193,7 +198,10 @@ mod tests {
 
         store.set_key_enabled(id, false).unwrap();
         let rows = store
-            .records_between(Timestamp::UNIX_EPOCH, "2030-01-01T00:00:00Z".parse().unwrap())
+            .records_between(
+                Timestamp::UNIX_EPOCH,
+                "2030-01-01T00:00:00Z".parse().unwrap(),
+            )
             .unwrap();
         assert!(rows.is_empty());
     }

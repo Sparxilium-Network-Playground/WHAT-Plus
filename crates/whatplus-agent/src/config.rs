@@ -114,7 +114,8 @@ impl Paths {
 /// 檔案不存在時回傳預設值。
 fn load_json<T: DeserializeOwned + Default>(path: &Path) -> Result<T> {
     match fs::read_to_string(path) {
-        Ok(text) => serde_json::from_str(&text).with_context(|| format!("{} is not valid JSON", path.display())),
+        Ok(text) => serde_json::from_str(&text)
+            .with_context(|| format!("{} is not valid JSON", path.display())),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(T::default()),
         Err(e) => Err(e).with_context(|| format!("cannot read {}", path.display())),
     }
@@ -123,8 +124,12 @@ fn load_json<T: DeserializeOwned + Default>(path: &Path) -> Result<T> {
 /// 先寫暫存檔再改名，避免 daemon 讀到寫一半的檔案。
 fn save_json<T: Serialize>(path: &Path, value: &T) -> Result<()> {
     let tmp = path.with_extension("json.tmp");
-    fs::write(&tmp, serde_json::to_string_pretty(value)?)
-        .with_context(|| format!("cannot write {} (is the data directory writable?)", tmp.display()))?;
+    fs::write(&tmp, serde_json::to_string_pretty(value)?).with_context(|| {
+        format!(
+            "cannot write {} (is the data directory writable?)",
+            tmp.display()
+        )
+    })?;
     fs::rename(&tmp, path).with_context(|| format!("cannot replace {}", path.display()))?;
     Ok(())
 }

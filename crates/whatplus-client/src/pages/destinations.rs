@@ -17,14 +17,19 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
         let ctx = ctx.clone();
         data.on_load_channels(move || {
             ctx.call(Request::ListDiscordChannels, |ctx, ui, resp| {
-                let Response::Guilds { guilds } = resp else { return };
+                let Response::Guilds { guilds } = resp else {
+                    return;
+                };
                 let d = ui.global::<DestData>();
                 d.set_guilds(strings(guilds.iter().map(|g| g.name.clone())));
                 d.set_guild_index(-1);
                 d.set_channels(strings(Vec::new()));
                 d.set_channel_index(-1);
                 if guilds.is_empty() {
-                    ctx.error(ctx.t("The bot has not joined any Discord server yet.", "Bot 還沒有加入任何 Discord Server。"));
+                    ctx.error(ctx.t(
+                        "The bot has not joined any Discord server yet.",
+                        "Bot 還沒有加入任何 Discord Server。",
+                    ));
                 }
                 ctx.cache().guilds = guilds;
             });
@@ -52,13 +57,20 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
     {
         let ctx = ctx.clone();
         data.on_test(move |id| {
-            ctx.call(Request::TestDestination { id: id as i64 }, |ctx, _, resp| {
-                if let Response::Sent { results } = resp {
-                    let text = results.join("\n");
-                    if text.contains("FAILED") { ctx.error(text) } else { ctx.info(text) }
-                }
-                refresh(ctx);
-            });
+            ctx.call(
+                Request::TestDestination { id: id as i64 },
+                |ctx, _, resp| {
+                    if let Response::Sent { results } = resp {
+                        let text = results.join("\n");
+                        if text.contains("FAILED") {
+                            ctx.error(text)
+                        } else {
+                            ctx.info(text)
+                        }
+                    }
+                    refresh(ctx);
+                },
+            );
         });
     }
     {
@@ -66,7 +78,9 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
         data.on_toggle(move |id| {
             let Some(mut d) = find(&ctx, id) else { return };
             d.enabled = !d.enabled;
-            ctx.call(Request::SaveDestination { destination: d }, |ctx, _, _| refresh(ctx));
+            ctx.call(Request::SaveDestination { destination: d }, |ctx, _, _| {
+                refresh(ctx)
+            });
         });
     }
     {
@@ -75,14 +89,20 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
             let Some(d) = find(&ctx, id) else { return };
             let question = format!("{} \"{}\"?", ctx.t("Delete channel", "刪除頻道"), d.name);
             if super::confirm(&ctx, &question) {
-                ctx.call(Request::DeleteDestination { id: d.id }, |ctx, _, _| refresh(ctx));
+                ctx.call(Request::DeleteDestination { id: d.id }, |ctx, _, _| {
+                    refresh(ctx)
+                });
             }
         });
     }
 }
 
 fn find(ctx: &Ctx, id: i32) -> Option<Destination> {
-    ctx.cache().destinations.iter().find(|d| d.id == id as i64).cloned()
+    ctx.cache()
+        .destinations
+        .iter()
+        .find(|d| d.id == id as i64)
+        .cloned()
 }
 
 fn add(ctx: &Ctx) {
@@ -90,11 +110,14 @@ fn add(ctx: &Ctx) {
     let d = ui.global::<DestData>();
     let picked = {
         let cache = ctx.cache();
-        cache.guilds.get(d.get_guild_index() as usize).and_then(|g| {
-            g.channels
-                .get(d.get_channel_index() as usize)
-                .map(|c| (g.id.clone(), g.name.clone(), c.id.clone(), c.name.clone()))
-        })
+        cache
+            .guilds
+            .get(d.get_guild_index() as usize)
+            .and_then(|g| {
+                g.channels
+                    .get(d.get_channel_index() as usize)
+                    .map(|c| (g.id.clone(), g.name.clone(), c.id.clone(), c.name.clone()))
+            })
     };
     let Some((guild_id, guild_name, channel_id, channel_name)) = picked else {
         ctx.error(ctx.t("Choose a server and a channel.", "請選擇 Server 與頻道。"));
@@ -103,7 +126,11 @@ fn add(ctx: &Ctx) {
     let name = d.get_name().trim().to_string();
     let destination = Destination {
         id: 0,
-        name: if name.is_empty() { format!("#{channel_name}") } else { name },
+        name: if name.is_empty() {
+            format!("#{channel_name}")
+        } else {
+            name
+        },
         guild_id,
         guild_name,
         channel_id,
@@ -114,14 +141,19 @@ fn add(ctx: &Ctx) {
     };
     ctx.call(Request::SaveDestination { destination }, |ctx, ui, _| {
         ui.global::<DestData>().set_name("".into());
-        ctx.info(ctx.t("Channel added. Use Test to check that the bot can post there.", "已新增頻道。可以按「測試」確認 Bot 能發訊息。"));
+        ctx.info(ctx.t(
+            "Channel added. Use Test to check that the bot can post there.",
+            "已新增頻道。可以按「測試」確認 Bot 能發訊息。",
+        ));
         refresh(ctx);
     });
 }
 
 pub fn refresh(ctx: &Ctx) {
     ctx.call(Request::ListDestinations, |ctx, ui, resp| {
-        let Response::Destinations { destinations } = resp else { return };
+        let Response::Destinations { destinations } = resp else {
+            return;
+        };
         let rows: Vec<DestinationRow> = destinations
             .iter()
             .map(|d| DestinationRow {
@@ -133,7 +165,8 @@ pub fn refresh(ctx: &Ctx) {
                 enabled: d.enabled,
             })
             .collect();
-        ui.global::<DestData>().set_rows(ModelRc::new(VecModel::from(rows)));
+        ui.global::<DestData>()
+            .set_rows(ModelRc::new(VecModel::from(rows)));
         ctx.cache().destinations = destinations;
         super::push::update_destinations(ctx, ui);
         super::schedules::update_destinations(ctx, ui);

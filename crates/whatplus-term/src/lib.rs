@@ -26,15 +26,27 @@ impl Term {
     }
 
     fn width() -> usize {
-        terminal::size().map(|(w, _)| w as usize).unwrap_or(120).max(20)
+        terminal::size()
+            .map(|(w, _)| w as usize)
+            .unwrap_or(120)
+            .max(20)
     }
 
     /// 清除畫面並輸出標題、內容與按鍵說明。
     pub fn draw(&mut self, title: &str, lines: &[String], footer: &str) -> Result<()> {
         let width = Self::width();
         let fit = |s: &str| -> String { s.chars().take(width.saturating_sub(1)).collect() };
-        queue!(self.out, terminal::Clear(terminal::ClearType::All), cursor::MoveTo(0, 0))?;
-        let mut all = vec![RULE.to_string(), format!(" {} - {title}", self.app), RULE.to_string(), String::new()];
+        queue!(
+            self.out,
+            terminal::Clear(terminal::ClearType::All),
+            cursor::MoveTo(0, 0)
+        )?;
+        let mut all = vec![
+            RULE.to_string(),
+            format!(" {} - {title}", self.app),
+            RULE.to_string(),
+            String::new(),
+        ];
         all.extend(lines.iter().cloned());
         all.push(String::new());
         all.push(RULE.to_string());
@@ -74,11 +86,20 @@ impl Term {
         lines.push(String::new());
         lines.push(" Continue? (y/N)".into());
         self.draw(title, &lines, "y = yes   any other key = no")?;
-        Ok(matches!(self.key()?.code, KeyCode::Char('y') | KeyCode::Char('Y')))
+        Ok(matches!(
+            self.key()?.code,
+            KeyCode::Char('y') | KeyCode::Char('Y')
+        ))
     }
 
     /// 單行輸入。Enter 確認、Esc 取消。
-    pub fn prompt(&mut self, title: &str, help: &[&str], label: &str, initial: &str) -> Result<Option<String>> {
+    pub fn prompt(
+        &mut self,
+        title: &str,
+        help: &[&str],
+        label: &str,
+        initial: &str,
+    ) -> Result<Option<String>> {
         let mut value = initial.to_string();
         loop {
             let mut lines: Vec<String> = help.iter().map(|l| format!(" {l}")).collect();
@@ -86,7 +107,11 @@ impl Term {
                 lines.push(String::new());
             }
             lines.push(format!(" {label}: {value}_"));
-            self.draw(title, &lines, "Enter = confirm   Esc = cancel   Backspace = delete")?;
+            self.draw(
+                title,
+                &lines,
+                "Enter = confirm   Esc = cancel   Backspace = delete",
+            )?;
             let k = self.key()?;
             match k.code {
                 KeyCode::Enter => return Ok(Some(value.trim().to_string())),
@@ -101,7 +126,13 @@ impl Term {
     }
 
     /// 從清單選一項。回傳選中的索引；Esc 回傳 `None`。
-    pub fn choose(&mut self, title: &str, header: &[String], items: &[String], start: usize) -> Result<Option<usize>> {
+    pub fn choose(
+        &mut self,
+        title: &str,
+        header: &[String],
+        items: &[String],
+        start: usize,
+    ) -> Result<Option<usize>> {
         if items.is_empty() {
             return Ok(None);
         }
@@ -112,7 +143,11 @@ impl Term {
                 lines.push(String::new());
             }
             lines.extend(list_lines(items, cursor));
-            self.draw(title, &lines, "Up/Down = move   Enter = select   Esc = back")?;
+            self.draw(
+                title,
+                &lines,
+                "Up/Down = move   Enter = select   Esc = back",
+            )?;
             match self.key()?.code {
                 KeyCode::Up => cursor = cursor.saturating_sub(1),
                 KeyCode::Down => cursor = (cursor + 1).min(items.len() - 1),

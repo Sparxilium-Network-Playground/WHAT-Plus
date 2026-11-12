@@ -23,7 +23,10 @@ pub struct UploadSummary {
 }
 
 pub fn load_key(config: &AgentConfig) -> Result<Arc<whatplus_ssh::PrivateKey>> {
-    let path = config.key_path.as_ref().context("no private key selected")?;
+    let path = config
+        .key_path
+        .as_ref()
+        .context("no private key selected")?;
     match keys::load_private_key(path, None) {
         Ok(k) => Ok(Arc::new(k)),
         Err(KeyError::NeedsPassphrase) => bail!(
@@ -34,7 +37,11 @@ pub fn load_key(config: &AgentConfig) -> Result<Arc<whatplus_ssh::PrivateKey>> {
     }
 }
 
-pub fn options(config: &AgentConfig, key: Arc<whatplus_ssh::PrivateKey>, known: Option<String>) -> ConnectOptions {
+pub fn options(
+    config: &AgentConfig,
+    key: Arc<whatplus_ssh::PrivateKey>,
+    known: Option<String>,
+) -> ConnectOptions {
     ConnectOptions {
         host: config.server_host.trim().to_string(),
         port: config.server_port,
@@ -51,7 +58,8 @@ pub async fn run_once(config: &AgentConfig, full: bool) -> Result<UploadSummary>
         bail!("not configured: {}", missing.join(", "));
     }
     let key = load_key(config)?;
-    let mut conn = Connection::connect(options(config, key, config.server_fingerprint.clone())).await?;
+    let mut conn =
+        Connection::connect(options(config, key, config.server_fingerprint.clone())).await?;
 
     let latest = match conn.request(Request::UploadState).await? {
         Response::UploadState { latest, .. } => latest,
@@ -70,7 +78,12 @@ pub async fn run_once(config: &AgentConfig, full: bool) -> Result<UploadSummary>
     let records = collect::since(records, since);
     let sent = records.len();
     for chunk in records.chunks(MAX_UPLOAD_BATCH) {
-        match conn.request(Request::Upload { records: chunk.to_vec() }).await? {
+        match conn
+            .request(Request::Upload {
+                records: chunk.to_vec(),
+            })
+            .await?
+        {
             Response::Uploaded { .. } => {}
             other => return Err(unexpected(other).into()),
         }
@@ -80,5 +93,8 @@ pub async fn run_once(config: &AgentConfig, full: bool) -> Result<UploadSummary>
         _ => 0,
     };
     conn.close().await;
-    Ok(UploadSummary { sent, server_records })
+    Ok(UploadSummary {
+        sent,
+        server_records,
+    })
 }

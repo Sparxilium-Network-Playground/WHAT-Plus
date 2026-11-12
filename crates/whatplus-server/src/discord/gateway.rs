@@ -11,7 +11,8 @@ const GATEWAY: &str = "wss://gateway.discord.gg/?v=10&encoding=json";
 const TIMEOUT: Duration = Duration::from_secs(20);
 
 pub fn identify_once(token: &str) -> Result<()> {
-    let (mut socket, _) = tungstenite::connect(GATEWAY).context("cannot connect to the Discord gateway")?;
+    let (mut socket, _) =
+        tungstenite::connect(GATEWAY).context("cannot connect to the Discord gateway")?;
     if let tungstenite::stream::MaybeTlsStream::Rustls(s) = socket.get_mut() {
         let _ = s.get_mut().set_read_timeout(Some(TIMEOUT));
     }

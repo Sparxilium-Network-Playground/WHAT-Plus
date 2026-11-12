@@ -35,7 +35,10 @@ pub fn screen(term: &mut Term, ctx: &Ctx) -> Result<()> {
             };
             format!(
                 "{}  {}  {}{note}",
-                k.path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default(),
+                k.path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_default(),
                 k.fingerprint,
                 k.comment
             )
@@ -55,7 +58,10 @@ pub fn screen(term: &mut Term, ctx: &Ctx) -> Result<()> {
     } else {
         let k = &found[choice];
         if !k.supported || k.encrypted {
-            term.message(TITLE, "This key cannot be used. Choose an ssh-ed25519 key without a passphrase.")?;
+            term.message(
+                TITLE,
+                "This key cannot be used. Choose an ssh-ed25519 key without a passphrase.",
+            )?;
             return Ok(());
         }
         k.path.clone()
@@ -76,14 +82,26 @@ pub fn screen(term: &mut Term, ctx: &Ctx) -> Result<()> {
 }
 
 fn generate(term: &mut Term, dir: &std::path::Path) -> Result<Option<PathBuf>> {
-    let Some(name) = term.prompt(TITLE, &["File name for the new private key."], "File name", "whatplus_agent_ed25519")? else {
+    let Some(name) = term.prompt(
+        TITLE,
+        &["File name for the new private key."],
+        "File name",
+        "whatplus_agent_ed25519",
+    )?
+    else {
         return Ok(None);
     };
     if name.is_empty() || name.contains(['/', '\\']) || name.starts_with('.') {
         term.message(TITLE, "Use a plain file name without slashes.")?;
         return Ok(None);
     }
-    let Some(comment) = term.prompt(TITLE, &["A label for the key, e.g. this machine's name."], "Comment", "whatplus-agent")? else {
+    let Some(comment) = term.prompt(
+        TITLE,
+        &["A label for the key, e.g. this machine's name."],
+        "Comment",
+        "whatplus-agent",
+    )?
+    else {
         return Ok(None);
     };
     let path = dir.join(&name);

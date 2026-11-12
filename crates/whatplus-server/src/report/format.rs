@@ -88,7 +88,12 @@ pub fn compact(n: u64) -> String {
 
 fn line(t: &Texts, name: &str, u: &UsageTotals, show_tokens: bool) -> String {
     if show_tokens {
-        format!("• {name}: **{}** · {} {}", money(u.cost_usd), compact(u.tokens.total()), t.tokens)
+        format!(
+            "• {name}: **{}** · {} {}",
+            money(u.cost_usd),
+            compact(u.tokens.total()),
+            t.tokens
+        )
     } else {
         format!("• {name}: **{}**", money(u.cost_usd))
     }
@@ -171,7 +176,11 @@ pub fn render(
         out.push(String::new());
         out.push(format!("**{}**", t.top_projects));
         for (machine, project, u) in &data.top_projects {
-            let name = format!("{} / {}", clean(machine, NAME_LIMIT), clean(project, NAME_LIMIT));
+            let name = format!(
+                "{} / {}",
+                clean(machine, NAME_LIMIT),
+                clean(project, NAME_LIMIT)
+            );
             out.push(line(t, &name, u, tok));
         }
     }
@@ -188,7 +197,8 @@ pub fn split_messages(text: &str) -> Vec<String> {
     let mut current = String::new();
     for line in text.lines() {
         let line: String = line.chars().take(MESSAGE_LIMIT).collect();
-        if current.chars().count() + line.chars().count() + 1 > MESSAGE_LIMIT && !current.is_empty() {
+        if current.chars().count() + line.chars().count() + 1 > MESSAGE_LIMIT && !current.is_empty()
+        {
             messages.push(std::mem::take(&mut current));
         }
         if !current.is_empty() {
@@ -212,15 +222,30 @@ mod tests {
     fn empty_report_and_languages() {
         let now: jiff::Zoned = "2026-11-13T10:00:00+08:00[Asia/Taipei]".parse().unwrap();
         let p = manual_period(ManualRange::Today, &now).unwrap();
-        let en = render(&ReportData::default(), &p, "Asia/Taipei", ReportContent::default(), Language::En);
+        let en = render(
+            &ReportData::default(),
+            &p,
+            "Asia/Taipei",
+            ReportContent::default(),
+            Language::En,
+        );
         assert!(en.contains("No usage"));
-        let zh = render(&ReportData::default(), &p, "Asia/Taipei", ReportContent::default(), Language::ZhTw);
+        let zh = render(
+            &ReportData::default(),
+            &p,
+            "Asia/Taipei",
+            ReportContent::default(),
+            Language::ZhTw,
+        );
         assert!(zh.contains("沒有用量"));
     }
 
     #[test]
     fn split_respects_limit() {
-        let text = (0..500).map(|i| format!("line {i}")).collect::<Vec<_>>().join("\n");
+        let text = (0..500)
+            .map(|i| format!("line {i}"))
+            .collect::<Vec<_>>()
+            .join("\n");
         let parts = split_messages(&text);
         assert!(parts.len() > 1);
         assert!(parts.iter().all(|p| p.chars().count() <= MESSAGE_LIMIT));

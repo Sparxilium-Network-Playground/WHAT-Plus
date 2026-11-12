@@ -62,7 +62,9 @@ pub async fn handle(app: &App, who: &Identity, req: Request) -> Response {
         Request::DeleteAgentKey { id } => admin_keys::delete(app, id),
         Request::ListDiscordChannels => admin_reports::guilds(app).await,
         Request::ListDestinations => admin_reports::destinations(app),
-        Request::SaveDestination { destination } => admin_reports::save_destination(app, &destination),
+        Request::SaveDestination { destination } => {
+            admin_reports::save_destination(app, &destination)
+        }
         Request::DeleteDestination { id } => admin_reports::delete_destination(app, id),
         Request::TestDestination { id } => admin_reports::test_destination(app, id).await,
         Request::ListSchedules => admin_reports::schedules(app),

@@ -16,7 +16,10 @@ pub fn load_or_create(path: &Path) -> Result<PrivateKey> {
     match keys::load_private_key(path, None) {
         Ok(key) => Ok(key),
         Err(KeyError::NeedsPassphrase) => {
-            bail!("hostKey: {} must not be protected by a passphrase", path.display())
+            bail!(
+                "hostKey: {} must not be protected by a passphrase",
+                path.display()
+            )
         }
         Err(e) => Err(anyhow::anyhow!("hostKey: {}: {e}", path.display())),
     }

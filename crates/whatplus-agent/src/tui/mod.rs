@@ -49,17 +49,36 @@ fn header(ctx: &Ctx) -> Result<Vec<String>> {
     let mut lines = vec![
         format!(
             " Server:       {}",
-            if cfg.server_host.is_empty() { "-".to_string() } else { format!("{}:{}", cfg.server_host, cfg.server_port) }
+            if cfg.server_host.is_empty() {
+                "-".to_string()
+            } else {
+                format!("{}:{}", cfg.server_host, cfg.server_port)
+            }
         ),
-        format!(" Fingerprint:  {}", cfg.server_fingerprint.clone().unwrap_or_else(|| "not verified".into())),
-        format!(" Private key:  {}", or_dash(cfg.key_path.as_ref().map(|p| p.display().to_string()))),
+        format!(
+            " Fingerprint:  {}",
+            cfg.server_fingerprint
+                .clone()
+                .unwrap_or_else(|| "not verified".into())
+        ),
+        format!(
+            " Private key:  {}",
+            or_dash(cfg.key_path.as_ref().map(|p| p.display().to_string()))
+        ),
         format!(" Interval:     every {} minutes", cfg.interval()),
-        format!(" Last upload:  {} {}", or_dash(state.last_attempt_at), or_dash(state.last_result)),
+        format!(
+            " Last upload:  {} {}",
+            or_dash(state.last_attempt_at),
+            or_dash(state.last_result)
+        ),
     ];
     let missing = cfg.missing();
     if !missing.is_empty() {
         lines.push(String::new());
-        lines.push(format!(" ! Not uploading yet. Missing: {}.", missing.join(", ")));
+        lines.push(format!(
+            " ! Not uploading yet. Missing: {}.",
+            missing.join(", ")
+        ));
     }
     Ok(lines)
 }

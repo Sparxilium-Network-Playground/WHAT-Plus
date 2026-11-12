@@ -18,7 +18,11 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
     prefs.on_changed(move || {
         let Some(ui) = ctx.ui.upgrade() else { return };
         let p = ui.global::<Prefs>();
-        let language = if p.get_language_index() == 0 { "zh-TW" } else { "en" };
+        let language = if p.get_language_index() == 0 {
+            "zh-TW"
+        } else {
+            "en"
+        };
         let theme = p.get_theme_index();
         ctx.update_settings(|s| {
             s.language = language.to_string();

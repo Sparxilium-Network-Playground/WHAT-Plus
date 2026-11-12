@@ -127,7 +127,11 @@ impl Conn {
 
     /// 在 transaction 內執行；`f` 失敗時 rollback。
     pub fn transaction<T>(&self, immediate: bool, f: impl FnOnce(&Conn) -> Result<T>) -> Result<T> {
-        self.execute_batch(if immediate { "BEGIN IMMEDIATE" } else { "BEGIN" })?;
+        self.execute_batch(if immediate {
+            "BEGIN IMMEDIATE"
+        } else {
+            "BEGIN"
+        })?;
         match f(self) {
             Ok(v) => {
                 self.execute_batch("COMMIT")?;

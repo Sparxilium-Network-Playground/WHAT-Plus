@@ -43,7 +43,12 @@ pub enum Decision {
     Send,
 }
 
-pub fn decide(due: Timestamp, now: Timestamp, last_due: Option<Timestamp>, baseline: Option<Timestamp>) -> Decision {
+pub fn decide(
+    due: Timestamp,
+    now: Timestamp,
+    last_due: Option<Timestamp>,
+    baseline: Option<Timestamp>,
+) -> Decision {
     if last_due.is_some_and(|last| last >= due) {
         return Decision::Done;
     }
@@ -58,7 +63,12 @@ pub fn decide(due: Timestamp, now: Timestamp, last_due: Option<Timestamp>, basel
 
 async fn tick(app: &App) -> Result<()> {
     let now = app.now();
-    for schedule in app.store.list_schedules()?.into_iter().filter(|s| s.enabled) {
+    for schedule in app
+        .store
+        .list_schedules()?
+        .into_iter()
+        .filter(|s| s.enabled)
+    {
         if let Err(e) = run_one(app, &schedule, &now).await {
             tracing::warn!(schedule = schedule.id, "schedule failed: {e:#}");
         }
@@ -79,15 +89,26 @@ async fn run_one(app: &App, schedule: &Schedule, now: &jiff::Zoned) -> Result<()
 
     match decide(due_ts, now.timestamp(), last_due, baseline) {
         Decision::Done => Ok(()),
-        Decision::Baseline => store.set_schedule_run(schedule.id, &due_ts.to_string(), "waiting for next run"),
+        Decision::Baseline => {
+            store.set_schedule_run(schedule.id, &due_ts.to_string(), "waiting for next run")
+        }
         Decision::Missed => {
-            tracing::warn!(schedule = schedule.id, "missed run at {due}; not sending a late report");
-            store.set_schedule_run(schedule.id, &due_ts.to_string(), "missed (server was offline)")
+            tracing::warn!(
+                schedule = schedule.id,
+                "missed run at {due}; not sending a late report"
+            );
+            store.set_schedule_run(
+                schedule.id,
+                &due_ts.to_string(),
+                "missed (server was offline)",
+            )
         }
         Decision::Send => {
             let period = scheduled_period(schedule.kind, &due)?;
             let result = match pick_destinations(app, &schedule.destination_ids) {
-                Ok(dests) => send_report(app, &period, schedule.content, &dests).await?.join("; "),
+                Ok(dests) => send_report(app, &period, schedule.content, &dests)
+                    .await?
+                    .join("; "),
                 Err(e) => format!("FAILED {e}"),
             };
             tracing::info!(schedule = schedule.id, "report sent: {result}");
@@ -108,11 +129,22 @@ mod tests {
     fn decisions() {
         let due = t("2026-11-13T01:00:00Z");
         let now = t("2026-11-13T01:00:30Z");
-        assert_eq!(decide(due, now, None, Some(t("2026-11-01T00:00:00Z"))), Decision::Send);
-        assert_eq!(decide(due, now, Some(due), None), Decision::Done);
-        assert_eq!(decide(due, now, None, Some(t("2026-11-13T02:00:00Z"))), Decision::Baseline);
         assert_eq!(
-            decide(due, t("2026-11-13T09:00:00Z"), Some(t("2026-11-12T01:00:00Z")), None),
+            decide(due, now, None, Some(t("2026-11-01T00:00:00Z"))),
+            Decision::Send
+        );
+        assert_eq!(decide(due, now, Some(due), None), Decision::Done);
+        assert_eq!(
+            decide(due, now, None, Some(t("2026-11-13T02:00:00Z"))),
+            Decision::Baseline
+        );
+        assert_eq!(
+            decide(
+                due,
+                t("2026-11-13T09:00:00Z"),
+                Some(t("2026-11-12T01:00:00Z")),
+                None
+            ),
             Decision::Missed
         );
     }

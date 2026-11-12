@@ -58,12 +58,18 @@ pub async fn run(settings: Settings) -> Result<()> {
 
 /// TUI 的 Restart Service 會寫入新的 token；token 改變就結束 process，由 Docker 重新啟動。
 async fn watch_restart(store: Arc<Store>, interval: Duration) {
-    let initial = store.runtime_get(runtime::DAEMON_RESTART_REQUEST).ok().flatten();
+    let initial = store
+        .runtime_get(runtime::DAEMON_RESTART_REQUEST)
+        .ok()
+        .flatten();
     let mut ticker = tokio::time::interval(interval);
     loop {
         ticker.tick().await;
         let _ = store.runtime_set(runtime::DAEMON_HEARTBEAT, &now_rfc3339());
-        let current = store.runtime_get(runtime::DAEMON_RESTART_REQUEST).ok().flatten();
+        let current = store
+            .runtime_get(runtime::DAEMON_RESTART_REQUEST)
+            .ok()
+            .flatten();
         if current != initial {
             tracing::info!("restart requested from the admin TUI; exiting");
             std::process::exit(0);

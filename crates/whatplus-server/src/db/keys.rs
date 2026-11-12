@@ -78,10 +78,11 @@ impl Store {
     }
 
     pub fn key_role(&self, id: i64) -> Result<Option<Role>> {
-        self.lock()
-            .query_row("SELECT role FROM authorized_key WHERE id = ?", params![id], |r| {
-                Ok(parse_role(r.get(0)?))
-            })
+        self.lock().query_row(
+            "SELECT role FROM authorized_key WHERE id = ?",
+            params![id],
+            |r| Ok(parse_role(r.get(0)?)),
+        )
     }
 
     pub fn add_key(&self, key: NewKey<'_>) -> Result<i64> {

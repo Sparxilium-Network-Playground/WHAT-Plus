@@ -3,14 +3,14 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-use whatplus_term::KeyCode;
 use whatplus_proto::Role;
 use whatplus_ssh::keys::{self, FoundPublicKey};
+use whatplus_term::KeyCode;
 
 use super::Ctx;
-use whatplus_term::{Term, checkbox, list_lines};
 use crate::db::NewKey;
 use crate::validate;
+use whatplus_term::{Term, checkbox, list_lines};
 
 const TITLE: &str = "Import keys";
 
@@ -27,30 +27,50 @@ pub fn screen(term: &mut Term, ctx: &Ctx) -> Result<()> {
     let dir = PathBuf::from(if dir.is_empty() { default_dir } else { dir });
     let found = keys::scan_public_keys(&dir)?;
     if found.is_empty() {
-        term.message(TITLE, &format!("No public keys found in {}.", dir.display()))?;
+        term.message(
+            TITLE,
+            &format!("No public keys found in {}.", dir.display()),
+        )?;
         return Ok(());
     }
-    let registered: Vec<String> = ctx.store.list_keys()?.into_iter().map(|k| k.fingerprint).collect();
+    let registered: Vec<String> = ctx
+        .store
+        .list_keys()?
+        .into_iter()
+        .map(|k| k.fingerprint)
+        .collect();
     let Some(selected) = pick(term, &dir, &found, &registered)? else {
         return Ok(());
     };
     if selected.is_empty() {
         return Ok(());
     }
-    let roles = ["agent  (a machine that uploads usage)", "admin  (the client app that manages settings)"];
+    let roles = [
+        "agent  (a machine that uploads usage)",
+        "admin  (the client app that manages settings)",
+    ];
     let items: Vec<String> = roles.iter().map(|s| s.to_string()).collect();
     let header = vec![format!(" Role for the {} selected key(s):", selected.len())];
     let Some(role_idx) = term.choose(TITLE, &header, &items, 0)? else {
         return Ok(());
     };
-    let role = if role_idx == 1 { Role::Admin } else { Role::Agent };
+    let role = if role_idx == 1 {
+        Role::Admin
+    } else {
+        Role::Agent
+    };
 
     let mut added = Vec::new();
     for idx in selected {
         let entry = &found[idx];
-        let Some(key) = entry.supported_key() else { continue };
+        let Some(key) = entry.supported_key() else {
+            continue;
+        };
         let suggestion = suggest_name(entry);
-        let help = [format!("Key: {}", keys::fingerprint(key)), format!("From: {}:{}", file_name(&entry.path), entry.line)];
+        let help = [
+            format!("Key: {}", keys::fingerprint(key)),
+            format!("From: {}:{}", file_name(&entry.path), entry.line),
+        ];
         let help: Vec<&str> = help.iter().map(String::as_str).collect();
         let Some(name) = term.prompt(TITLE, &help, "Name", &suggestion)? else {
             continue;
@@ -75,13 +95,24 @@ pub fn screen(term: &mut Term, ctx: &Ctx) -> Result<()> {
         }
     }
     if !added.is_empty() {
-        term.message(TITLE, &format!("Added:\n{}\n\nThe service applies the change within a few seconds.", added.join("\n")))?;
+        term.message(
+            TITLE,
+            &format!(
+                "Added:\n{}\n\nThe service applies the change within a few seconds.",
+                added.join("\n")
+            ),
+        )?;
     }
     Ok(())
 }
 
 /// 勾選清單。回傳選中的索引；Esc 回傳 `None`。
-fn pick(term: &mut Term, dir: &Path, found: &[FoundPublicKey], registered: &[String]) -> Result<Option<Vec<usize>>> {
+fn pick(
+    term: &mut Term,
+    dir: &Path,
+    found: &[FoundPublicKey],
+    registered: &[String],
+) -> Result<Option<Vec<usize>>> {
     let selectable = |e: &FoundPublicKey| {
         e.supported_key()
             .is_some_and(|k| !registered.contains(&keys::fingerprint(k)))
@@ -105,7 +136,11 @@ fn pick(term: &mut Term, dir: &Path, found: &[FoundPublicKey], registered: &[Str
             .collect();
         let mut lines = vec![format!(" Keys in {}:", dir.display()), String::new()];
         lines.extend(list_lines(&rows, cursor));
-        term.draw(TITLE, &lines, "Up/Down = move   Space = select   Enter = continue   Esc = cancel")?;
+        term.draw(
+            TITLE,
+            &lines,
+            "Up/Down = move   Space = select   Enter = continue   Esc = cancel",
+        )?;
         match term.key()?.code {
             KeyCode::Up => cursor = cursor.saturating_sub(1),
             KeyCode::Down => cursor = (cursor + 1).min(found.len() - 1),
@@ -120,7 +155,9 @@ fn pick(term: &mut Term, dir: &Path, found: &[FoundPublicKey], registered: &[Str
 }
 
 fn file_name(path: &Path) -> String {
-    path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default()
+    path.file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default()
 }
 
 /// 預設名稱：公鑰註解，沒有的話用檔名。

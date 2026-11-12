@@ -54,7 +54,11 @@ async fn start(store: Arc<Store>) -> Fixture {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = listener.local_addr().unwrap().port();
     tokio::spawn(serve_on(listener, app, host_key));
-    Fixture { port, host_fp, store }
+    Fixture {
+        port,
+        host_fp,
+        store,
+    }
 }
 
 fn opts(f: &Fixture, key: &Arc<whatplus_ssh::PrivateKey>, known: Option<&str>) -> ConnectOptions {
@@ -74,7 +78,11 @@ fn record() -> UsageRecord {
         model: "claude-test".into(),
         project: "proj".into(),
         session_id: "s".into(),
-        tokens: TokenCounts { input: 100, output: 50, ..Default::default() },
+        tokens: TokenCounts {
+            input: 100,
+            output: 50,
+            ..Default::default()
+        },
         cost_usd: 0.25,
         pricing_missing: false,
     }
@@ -108,24 +116,45 @@ async fn tofu_roles_and_upload() {
     ));
 
     // admin 新增 agent。
-    let mut admin = Connection::connect(opts(&f, &admin_key, Some(&f.host_fp))).await.unwrap();
+    let mut admin = Connection::connect(opts(&f, &admin_key, Some(&f.host_fp)))
+        .await
+        .unwrap();
     assert_eq!(admin.role, Role::Admin);
     let added = admin
         .request(Request::AddAgentKey {
-            key: AgentKeyInput { name: "desktop".into(), public_key: agent_pub, allowed_cidrs: vec![] },
+            key: AgentKeyInput {
+                name: "desktop".into(),
+                public_key: agent_pub,
+                allowed_cidrs: vec![],
+            },
         })
         .await
         .unwrap();
     assert!(matches!(added, Response::Saved { .. }));
     // admin 不能上傳。
-    assert!(admin.request(Request::Upload { records: vec![] }).await.is_err());
+    assert!(
+        admin
+            .request(Request::Upload { records: vec![] })
+            .await
+            .is_err()
+    );
 
     // agent 上傳，重送不重複計算；不能讀設定。
-    let mut agent = Connection::connect(opts(&f, &agent_key, Some(&f.host_fp))).await.unwrap();
+    let mut agent = Connection::connect(opts(&f, &agent_key, Some(&f.host_fp)))
+        .await
+        .unwrap();
     assert_eq!(agent.role, Role::Agent);
     let r = record();
-    agent.request(Request::Upload { records: vec![r.clone()] }).await.unwrap();
-    agent.request(Request::Upload { records: vec![r] }).await.unwrap();
+    agent
+        .request(Request::Upload {
+            records: vec![r.clone()],
+        })
+        .await
+        .unwrap();
+    agent
+        .request(Request::Upload { records: vec![r] })
+        .await
+        .unwrap();
     match agent.request(Request::UploadState).await.unwrap() {
         Response::UploadState { records, latest } => {
             assert_eq!(records, 1);
@@ -137,9 +166,19 @@ async fn tofu_roles_and_upload() {
     agent.close().await;
 
     // admin 看得到 agent，不能停用自己（admin 公鑰）。
-    let Response::Keys { keys } = admin.request(Request::ListKeys).await.unwrap() else { panic!() };
+    let Response::Keys { keys } = admin.request(Request::ListKeys).await.unwrap() else {
+        panic!()
+    };
     let me = keys.iter().find(|k| k.role == Role::Admin).unwrap();
-    assert!(admin.request(Request::SetAgentKeyEnabled { id: me.id, enabled: false }).await.is_err());
+    assert!(
+        admin
+            .request(Request::SetAgentKeyEnabled {
+                id: me.id,
+                enabled: false
+            })
+            .await
+            .is_err()
+    );
     let desktop = keys.iter().find(|k| k.name == "desktop").unwrap();
     assert_eq!(desktop.record_count, 1);
 
@@ -158,7 +197,13 @@ async fn tofu_roles_and_upload() {
     assert!(text.contains("desktop"), "{text}");
 
     // 停用後 agent 無法登入。
-    admin.request(Request::SetAgentKeyEnabled { id: desktop.id, enabled: false }).await.unwrap();
+    admin
+        .request(Request::SetAgentKeyEnabled {
+            id: desktop.id,
+            enabled: false,
+        })
+        .await
+        .unwrap();
     assert!(matches!(
         Connection::connect(opts(&f, &agent_key, Some(&f.host_fp))).await,
         Err(ConnectError::AuthRejected)

@@ -179,8 +179,8 @@ pub fn load_private_key(path: &Path, passphrase: Option<&str>) -> Result<Private
     if !text.trim_start().starts_with(PRIVATE_HEADER) {
         return Err(KeyError::NotPrivateKey(path.display().to_string()));
     }
-    let key = PrivateKey::from_openssh(text.as_bytes())
-        .map_err(|e| KeyError::Invalid(e.to_string()))?;
+    let key =
+        PrivateKey::from_openssh(text.as_bytes()).map_err(|e| KeyError::Invalid(e.to_string()))?;
     if key.algorithm() != Algorithm::Ed25519 {
         return Err(KeyError::Unsupported(key.algorithm().to_string()));
     }

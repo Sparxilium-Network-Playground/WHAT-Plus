@@ -46,7 +46,10 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
             let Some(ui) = ctx.ui.upgrade() else { return };
             let enabled = row_enabled(&ui, id);
             ctx.call(
-                Request::SetAgentKeyEnabled { id: id as i64, enabled: !enabled },
+                Request::SetAgentKeyEnabled {
+                    id: id as i64,
+                    enabled: !enabled,
+                },
                 |ctx, _, _| refresh(ctx),
             );
         });
@@ -100,8 +103,11 @@ fn row(ctx: &Ctx, k: &KeyInfo) -> MachineRow {
 
 pub fn refresh(ctx: &Ctx) {
     ctx.call(Request::ListKeys, |ctx, ui, resp| {
-        let Response::Keys { keys } = resp else { return };
+        let Response::Keys { keys } = resp else {
+            return;
+        };
         let rows: Vec<MachineRow> = keys.iter().map(|k| row(ctx, k)).collect();
-        ui.global::<MachineData>().set_rows(ModelRc::new(VecModel::from(rows)));
+        ui.global::<MachineData>()
+            .set_rows(ModelRc::new(VecModel::from(rows)));
     });
 }

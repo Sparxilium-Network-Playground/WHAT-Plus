@@ -101,9 +101,10 @@ impl Connection {
             ..Default::default()
         });
         let addr = (opts.host.as_str(), opts.port);
-        let connected = tokio::time::timeout(CONNECT_TIMEOUT, client::connect(config, addr, handler))
-            .await
-            .map_err(|_| ConnectError::Timeout)?;
+        let connected =
+            tokio::time::timeout(CONNECT_TIMEOUT, client::connect(config, addr, handler))
+                .await
+                .map_err(|_| ConnectError::Timeout)?;
         let mut handle = match connected {
             Ok(handle) => handle,
             Err(e) => {

@@ -32,7 +32,10 @@ pub fn address(term: &mut Term, ctx: &Ctx) -> Result<()> {
     cfg.server_port = port;
     ctx.save(&cfg)?;
     if cfg.server_fingerprint.is_none() && !cfg.server_host.is_empty() {
-        term.message(TITLE, "Saved. Next, choose \"Verify server and test login\".")?;
+        term.message(
+            TITLE,
+            "Saved. Next, choose \"Verify server and test login\".",
+        )?;
     }
     Ok(())
 }
@@ -47,7 +50,11 @@ pub fn verify(term: &mut Term, ctx: &Ctx) -> Result<()> {
     let public_line = keys::to_line(key.public_key());
 
     working(term, TITLE, "Connecting")?;
-    let mut result = ctx.rt.block_on(Connection::connect(upload::options(&cfg, key.clone(), cfg.server_fingerprint.clone())));
+    let mut result = ctx.rt.block_on(Connection::connect(upload::options(
+        &cfg,
+        key.clone(),
+        cfg.server_fingerprint.clone(),
+    )));
 
     if let Err(ConnectError::UnknownHost { fingerprint }) = &result {
         let text = format!(
@@ -62,7 +69,11 @@ pub fn verify(term: &mut Term, ctx: &Ctx) -> Result<()> {
         cfg.server_fingerprint = Some(fingerprint.clone());
         ctx.save(&cfg)?;
         working(term, TITLE, "Logging in")?;
-        result = ctx.rt.block_on(Connection::connect(upload::options(&cfg, key, cfg.server_fingerprint.clone())));
+        result = ctx.rt.block_on(Connection::connect(upload::options(
+            &cfg,
+            key,
+            cfg.server_fingerprint.clone(),
+        )));
     }
 
     let text = match result {
@@ -73,7 +84,9 @@ pub fn verify(term: &mut Term, ctx: &Ctx) -> Result<()> {
             if role == Role::Agent {
                 format!("OK. Logged in as \"{name}\". Uploads start automatically.")
             } else {
-                format!("This key is registered as an ADMIN key (\"{name}\").\nUse a separate key with the agent role for this machine.")
+                format!(
+                    "This key is registered as an ADMIN key (\"{name}\").\nUse a separate key with the agent role for this machine."
+                )
             }
         }
         Err(ConnectError::AuthRejected) => format!(

@@ -7,7 +7,9 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use russh::server::{self, Auth, ChannelOpenHandle, Msg, PublicKeyOffer, Session, VerifiedPublicKey};
+use russh::server::{
+    self, Auth, ChannelOpenHandle, Msg, PublicKeyOffer, Session, VerifiedPublicKey,
+};
 use russh::{Channel, ChannelId};
 use whatplus_proto::SUBSYSTEM;
 use whatplus_ssh::keys;
@@ -108,7 +110,8 @@ impl server::Handler for ConnHandler {
         name: &str,
         session: &mut Session,
     ) -> Result<(), Self::Error> {
-        let (Some(identity), Some(channel)) = (self.identity.clone(), self.pending.remove(&channel_id))
+        let (Some(identity), Some(channel)) =
+            (self.identity.clone(), self.pending.remove(&channel_id))
         else {
             return self.deny(channel_id, session, "subsystem");
         };
@@ -125,7 +128,11 @@ impl server::Handler for ConnHandler {
         Ok(())
     }
 
-    async fn shell_request(&mut self, channel: ChannelId, session: &mut Session) -> Result<(), Self::Error> {
+    async fn shell_request(
+        &mut self,
+        channel: ChannelId,
+        session: &mut Session,
+    ) -> Result<(), Self::Error> {
         self.deny(channel, session, "shell")
     }
 

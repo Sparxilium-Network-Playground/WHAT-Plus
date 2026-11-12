@@ -41,9 +41,16 @@ pub async fn run(paths: Paths) {
             state.last_attempt_at = Some(now());
             match upload::run_once(&config, false).await {
                 Ok(s) => {
-                    tracing::info!(sent = s.sent, server_records = s.server_records, "upload finished");
+                    tracing::info!(
+                        sent = s.sent,
+                        server_records = s.server_records,
+                        "upload finished"
+                    );
                     state.last_success_at = state.last_attempt_at.clone();
-                    state.last_result = Some(format!("OK: sent {} records (server has {})", s.sent, s.server_records));
+                    state.last_result = Some(format!(
+                        "OK: sent {} records (server has {})",
+                        s.sent, s.server_records
+                    ));
                 }
                 Err(e) => {
                     tracing::warn!("upload failed: {e:#}");
