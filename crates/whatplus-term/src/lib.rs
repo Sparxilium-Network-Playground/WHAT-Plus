@@ -5,21 +5,24 @@
 use std::io::{Stdout, Write, stdout};
 
 use anyhow::Result;
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+pub use crossterm::event::KeyCode;
+use crossterm::event::{self, Event, KeyEvent, KeyEventKind, KeyModifiers};
 use crossterm::{cursor, execute, queue, style::Print, terminal};
 
 const RULE: &str = "==============================================================================";
 
 pub struct Term {
     out: Stdout,
+    app: &'static str,
 }
 
 impl Term {
-    pub fn enter() -> Result<Self> {
+    /// `app` 顯示在每個畫面的標題前，例如 `WHAT Plus Server`。
+    pub fn enter(app: &'static str) -> Result<Self> {
         terminal::enable_raw_mode()?;
         let mut out = stdout();
         execute!(out, terminal::EnterAlternateScreen, cursor::Hide)?;
-        Ok(Self { out })
+        Ok(Self { out, app })
     }
 
     fn width() -> usize {
@@ -31,7 +34,7 @@ impl Term {
         let width = Self::width();
         let fit = |s: &str| -> String { s.chars().take(width.saturating_sub(1)).collect() };
         queue!(self.out, terminal::Clear(terminal::ClearType::All), cursor::MoveTo(0, 0))?;
-        let mut all = vec![RULE.to_string(), format!(" WHAT Plus Server - {title}"), RULE.to_string(), String::new()];
+        let mut all = vec![RULE.to_string(), format!(" {} - {title}", self.app), RULE.to_string(), String::new()];
         all.extend(lines.iter().cloned());
         all.push(String::new());
         all.push(RULE.to_string());

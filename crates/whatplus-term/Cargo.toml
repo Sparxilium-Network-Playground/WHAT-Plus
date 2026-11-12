@@ -1,0 +1,11 @@
+[package]
+name = "whatplus-term"
+description = "伺服器與來源端 TUI 共用的純文字繪製與輸入"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+crossterm.workspace = true

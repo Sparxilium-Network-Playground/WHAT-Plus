@@ -1,0 +1,29 @@
+[package]
+name = "whatplus-agent"
+description = "WHAT Plus 來源端：讀取本機 Claude Code / Codex / Antigravity 用量並上傳到伺服器"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "whatplus-agent"
+path = "src/main.rs"
+
+[dependencies]
+what-core.workspace = true
+what-sources.workspace = true
+what-pricing.workspace = true
+whatplus-proto.workspace = true
+whatplus-ssh.workspace = true
+whatplus-term.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+jiff.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

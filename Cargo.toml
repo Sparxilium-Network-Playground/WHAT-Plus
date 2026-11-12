@@ -15,6 +15,7 @@ what-sources = { path = "crates/what-sources" }
 what-pricing = { path = "crates/what-pricing" }
 whatplus-proto = { path = "crates/whatplus-proto" }
 whatplus-ssh = { path = "crates/whatplus-ssh" }
+whatplus-term = { path = "crates/whatplus-term" }
 
 # ccusage（MIT）以 git 依賴引入，鎖定 commit。只在 what-sources / what-pricing 內使用。
 ccusage-core = { git = "https://github.com/ryoppippi/ccusage", rev = "b71a1aae581b5961655b2cacf4aaf8c402981554" }

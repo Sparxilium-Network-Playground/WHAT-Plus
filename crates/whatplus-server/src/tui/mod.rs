@@ -4,7 +4,6 @@ mod import;
 mod keys;
 mod network;
 mod status;
-mod term;
 
 use std::path::Path;
 
@@ -13,7 +12,7 @@ use anyhow::Result;
 use crate::config::Settings;
 use crate::db::{Store, runtime};
 use crate::hostkey;
-use term::Term;
+use whatplus_term::Term;
 
 pub struct Ctx {
     pub store: Store,
@@ -51,7 +50,7 @@ impl Ctx {
 pub fn run(settings: Settings) -> Result<()> {
     let store = Store::open(&settings.database)?;
     let ctx = Ctx { store, settings };
-    let mut term = Term::enter()?;
+    let mut term = Term::enter("WHAT Plus Server")?;
     main_menu(&mut term, &ctx)
 }
 

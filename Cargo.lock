@@ -2929,6 +2929,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "whatplus-agent"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "jiff",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "what-core",
+ "what-pricing",
+ "what-sources",
+ "whatplus-proto",
+ "whatplus-ssh",
+ "whatplus-term",
+]
+
+[[package]]
 name = "whatplus-proto"
 version = "0.1.0"
 dependencies = [
@@ -2945,7 +2965,6 @@ name = "whatplus-server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "crossterm",
  "getrandom 0.3.4",
  "ipnet",
  "jiff",
@@ -2964,6 +2983,7 @@ dependencies = [
  "what-core",
  "whatplus-proto",
  "whatplus-ssh",
+ "whatplus-term",
 ]
 
 [[package]]
@@ -2979,6 +2999,14 @@ dependencies = [
  "tokio",
  "tracing",
  "whatplus-proto",
+]
+
+[[package]]
+name = "whatplus-term"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "crossterm",
 ]
 
 [[package]]

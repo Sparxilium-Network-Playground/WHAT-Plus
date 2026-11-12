@@ -3,12 +3,12 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-use crossterm::event::KeyCode;
+use whatplus_term::KeyCode;
 use whatplus_proto::Role;
 use whatplus_ssh::keys::{self, FoundPublicKey};
 
 use super::Ctx;
-use super::term::{Term, checkbox, list_lines};
+use whatplus_term::{Term, checkbox, list_lines};
 use crate::db::NewKey;
 use crate::validate;
 

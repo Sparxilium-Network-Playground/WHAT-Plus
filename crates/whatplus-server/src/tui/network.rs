@@ -1,11 +1,11 @@
 //! Network allowlist：只有這些位址範圍可以連線（握手前檢查）。空清單＝全部拒絕。
 
 use anyhow::Result;
-use crossterm::event::KeyCode;
+use whatplus_term::KeyCode;
 use whatplus_ssh::allow::parse_cidr;
 
 use super::Ctx;
-use super::term::{Term, list_lines};
+use whatplus_term::{Term, list_lines};
 
 const TITLE: &str = "Network allowlist";
 

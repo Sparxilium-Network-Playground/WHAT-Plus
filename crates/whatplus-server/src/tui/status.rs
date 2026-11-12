@@ -3,7 +3,7 @@
 use anyhow::Result;
 
 use super::Ctx;
-use super::term::Term;
+use whatplus_term::Term;
 use crate::db::runtime;
 
 pub fn screen(term: &mut Term, ctx: &Ctx) -> Result<()> {

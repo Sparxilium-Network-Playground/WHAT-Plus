@@ -1,11 +1,11 @@
 //! Authorized keys：列出已註冊的公鑰，啟用／停用、改名、改角色、限制 IP、刪除。
 
 use anyhow::Result;
-use crossterm::event::KeyCode;
+use whatplus_term::KeyCode;
 use whatplus_proto::{KeyInfo, Role};
 
 use super::Ctx;
-use super::term::{Term, checkbox, list_lines};
+use whatplus_term::{Term, checkbox, list_lines};
 use crate::validate;
 
 const TITLE: &str = "Authorized keys";
