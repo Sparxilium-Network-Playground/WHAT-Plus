@@ -59,6 +59,7 @@ whatplus-client ──Status/Schedules/...─────┘  ▲
 ### 來源端（`whatplus-agent/src`）
 
 - `collect`：呼叫 `what_sources::all_sources()` 讀取並用內嵌價格表計價。
+- `snapshot`：容器內唯讀掛載的 Antigravity SQLite（WAL）無法與主機的寫入端共用 `-shm`，會讀到過期內容。設定 `WHATPLUS_ANTIGRAVITY_SNAPSHOT`（image 預設 `/tmp/whatplus-antigravity`）時，讀取前先把 `*.db`／`*.db-wal` 複製到該目錄（只複製大小或時間有變的檔案），再讓 ccusage 讀快照。`run` 與 `admin` 各用一個子目錄。
 - `upload`：先問伺服器這台機器最新一筆的時間，往前 24 小時起重送（伺服器以內容去重），分批送出，每批最多 2000 筆。伺服器沒有資料時全部上傳。
 - `daemon`：每 30 秒讀一次 `agent.json`，間隔到了就上傳。伺服器位址、私鑰、已確認的指紋三者缺一就不連線。
 - `tui/`：Server address、Private key（掃描或產生）、Verify server（TOFU）、Upload interval、Upload now、Re-send all、Show local usage sources。
@@ -126,4 +127,6 @@ src/
 
 - `cargo test --workspace` 全數通過。`ssh/tests.rs` 端到端涵蓋：TOFU、指紋不符、未註冊的金鑰、角色限制、重送去重、停用金鑰、空白名單、沒有 admin。
 - 本機實測（Windows，不經 Docker）：來源端讀取真實日誌，上傳 15,453 筆，伺服器筆數一致；客戶端連線、狀態、預覽報告、排程頁、來源機器頁正常。
-- **尚未驗證**：Docker image 建置與容器內執行（本機 Docker Desktop 未啟動）、實際發送 Discord 訊息（沒有測試用 Bot Token）、TUI 的按鍵操作流程。
+- Docker（Windows 11 + Docker Desktop 29.9）：兩個 image 建置成功（各約 126 MB）。伺服器容器：產生 host key、沒有 admin 時拒絕連線、白名單外的連線在握手前關閉、Discord token 錯誤時顯示 `ERROR`。來源端容器以唯讀掛載真實日誌上傳 15,542 筆，三個工具的筆數與原生執行一致（修正 Antigravity WAL 問題後）。伺服器看到的來源 IP 是 `172.17.0.1`（Docker 閘道），證實上述已知限制。
+- 測試時從主機（Windows）直接寫入容器正在使用的 SQLite 會遺失：WAL 的 `-shm` 無法跨主機與 Docker VM 共用。要從主機改資料庫，先停止容器、寫入後 `PRAGMA wal_checkpoint(TRUNCATE)` 再啟動。正式使用一律透過容器內的 TUI，不受影響。
+- **尚未驗證**：實際發送 Discord 訊息（沒有測試用 Bot Token）、TUI 的按鍵操作流程、setup 腳本的互動流程。

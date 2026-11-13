@@ -59,6 +59,7 @@ fn run_daemon(settings: Settings) -> ExitCode {
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| "info,russh=warn".into()),
         )
+        .with_ansi(std::io::IsTerminal::is_terminal(&std::io::stdout()))
         .init();
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,

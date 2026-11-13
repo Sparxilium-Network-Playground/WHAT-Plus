@@ -6,6 +6,7 @@
 mod collect;
 mod config;
 mod daemon;
+mod snapshot;
 mod tui;
 mod upload;
 
@@ -16,6 +17,8 @@ use config::Paths;
 fn main() -> ExitCode {
     let mode = std::env::args().nth(1).unwrap_or_else(|| "run".into());
     let paths = Paths::from_env();
+    // 必須在建立 runtime（執行緒）之前：會設定環境變數。
+    snapshot::init(if mode == "run" { "run" } else { "admin" });
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
         Err(e) => {
@@ -30,6 +33,7 @@ fn main() -> ExitCode {
                     tracing_subscriber::EnvFilter::try_from_default_env()
                         .unwrap_or_else(|_| "info,russh=warn".into()),
                 )
+                .with_ansi(std::io::IsTerminal::is_terminal(&std::io::stdout()))
                 .init();
             runtime.block_on(daemon::run(paths));
             ExitCode::SUCCESS

@@ -16,6 +16,12 @@ pub struct SourceSummary {
 
 /// 讀取所有來源；單一來源失敗不影響其他來源。會做檔案 I/O，請在背景執行緒呼叫。
 pub fn load_all() -> (Vec<UsageRecord>, Vec<SourceSummary>) {
+    let failed = crate::snapshot::refresh();
+    if failed > 0 {
+        tracing::warn!(
+            "could not copy {failed} Antigravity database file(s); they will be retried"
+        );
+    }
     let pricing = PricingTable::embedded();
     let mut records = Vec::new();
     let mut summaries = Vec::new();

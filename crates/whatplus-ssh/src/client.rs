@@ -209,6 +209,11 @@ fn describe_network_error(e: &russh::Error) -> String {
         {
             format!("{io} (the server may not allow this IP address)")
         }
+        russh::Error::Disconnect => {
+            "the server closed the connection (this IP address may not be allowed, \
+             or the server has no admin key yet)"
+                .into()
+        }
         other => other.to_string(),
     }
 }
