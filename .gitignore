@@ -8,3 +8,6 @@ deploy/*/secrets/
 deploy/*/keys/
 deploy/agent/.env
 deploy/agent/empty/
+# agent files (local only, never tracked)
+/CLAUDE.md
+.claude/
