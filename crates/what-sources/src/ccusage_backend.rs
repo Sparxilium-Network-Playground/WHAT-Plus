@@ -31,6 +31,9 @@ fn shared_args() -> SharedArgs {
     shared.json = true;
     shared.offline = true;
     shared.mode = CostMode::Display;
+    // ccusage 預設每個 CPU 核心同時把一整個日誌檔讀進記憶體；單一檔案可能超過 100 MB，
+    // 在有記憶體上限的容器中會被 OOM kill。設定此變數改為一次讀一個檔案。
+    shared.single_thread = std::env::var_os("WHAT_SOURCES_SINGLE_THREAD").is_some();
     shared
 }
 

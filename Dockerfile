@@ -34,12 +34,14 @@ FROM runtime AS agent
 COPY --from=build /out/whatplus-agent /usr/local/bin/whatplus-agent
 # 使用者的資料目錄以唯讀方式掛載到這個 HOME 底下（見 deploy/agent/docker-compose.yml）。
 # Antigravity 的 SQLite（WAL）先複製到 /tmp 再讀，見 whatplus-agent/src/snapshot.rs。
+# 日誌一次讀一個檔案，避免多核心同時讀入大檔而超過容器的記憶體上限（mem_limit）。
 ENV HOME=/home/whatplus \
     CLAUDE_CONFIG_DIR=/home/whatplus/.claude \
     CODEX_HOME=/home/whatplus/.codex \
     WHATPLUS_AGENT_DATA=/data \
     WHATPLUS_AGENT_KEYS=/keys \
-    WHATPLUS_ANTIGRAVITY_SNAPSHOT=/tmp/whatplus-antigravity
+    WHATPLUS_ANTIGRAVITY_SNAPSHOT=/tmp/whatplus-antigravity \
+    WHAT_SOURCES_SINGLE_THREAD=1
 USER whatplus
 WORKDIR /data
 ENTRYPOINT ["whatplus-agent"]

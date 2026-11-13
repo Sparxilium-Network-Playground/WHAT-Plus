@@ -2,6 +2,7 @@
 //!
 //! - `whatplus-server run`：daemon（SSH 服務、排程、Discord）
 //! - `whatplus-server admin`：Admin TUI（公鑰、白名單、狀態），與 daemon 共用資料庫
+//! - `whatplus-server setup ...`：給安裝精靈呼叫的非互動指令（見 `setup_cli`）
 
 mod api;
 mod app;
@@ -15,6 +16,7 @@ mod hostkey;
 mod report;
 mod sanitize;
 mod scheduler;
+mod setup_cli;
 mod ssh;
 mod tui;
 mod validate;
@@ -46,8 +48,12 @@ fn main() -> ExitCode {
                 ExitCode::FAILURE
             }
         },
+        "setup" => {
+            let args: Vec<String> = std::env::args().skip(2).collect();
+            setup_cli::run(settings, &args)
+        }
         other => {
-            eprintln!("Unknown mode {other:?}. Usage: whatplus-server [run|admin]");
+            eprintln!("Unknown mode {other:?}. Usage: whatplus-server [run|admin|setup]");
             ExitCode::from(2)
         }
     }

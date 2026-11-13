@@ -14,6 +14,7 @@ use tokio::sync::Semaphore;
 use whatplus_ssh::PrivateKey;
 
 use crate::app::App;
+use crate::db::runtime;
 use handler::ConnHandler;
 
 /// 同時連線數上限。
@@ -46,6 +47,7 @@ pub async fn serve_on(listener: TcpListener, app: Arc<App>, host_key: PrivateKey
     let config = Arc::new(config(host_key));
     let slots = Arc::new(Semaphore::new(MAX_CONNECTIONS));
     let mut warned_no_admin = false;
+    let mut last_refused: Option<(std::net::IpAddr, std::time::Instant)> = None;
 
     loop {
         let (socket, peer) = match listener.accept().await {
@@ -69,6 +71,7 @@ pub async fn serve_on(listener: TcpListener, app: Arc<App>, host_key: PrivateKey
         warned_no_admin = false;
         if !auth.ip_allowed(peer.ip()) {
             tracing::warn!(%peer, "connection from an address outside the allowlist was refused");
+            note_refused(&app, peer.ip(), &mut last_refused);
             continue;
         }
         let Ok(permit) = slots.clone().try_acquire_owned() else {
@@ -94,3 +97,29 @@ pub async fn serve_on(listener: TcpListener, app: Arc<App>, host_key: PrivateKey
 
 #[cfg(test)]
 mod tests;
+
+/// 記下最近一次被白名單拒絕的位址，給 TUI 的 System status 與安裝精靈顯示
+/// （Docker Desktop 上看到的位址常常不是對方電腦的 IP）。同一個位址每分鐘最多寫一次，
+/// 避免大量連線造成大量寫入。
+fn note_refused(
+    app: &App,
+    ip: std::net::IpAddr,
+    last: &mut Option<(std::net::IpAddr, std::time::Instant)>,
+) {
+    if let Some((prev, at)) = last
+        && *prev == ip
+        && at.elapsed() < Duration::from_secs(60)
+    {
+        return;
+    }
+    *last = Some((ip, std::time::Instant::now()));
+    let value = format!(
+        "{ip} at {}",
+        jiff::Timestamp::now()
+            .round(jiff::Unit::Second)
+            .unwrap_or_else(|_| jiff::Timestamp::now())
+    );
+    if let Err(e) = app.store.runtime_set(runtime::LAST_REFUSED, &value) {
+        tracing::warn!("cannot record the refused address: {e:#}");
+    }
+}

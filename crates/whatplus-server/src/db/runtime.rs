@@ -13,6 +13,8 @@ pub const DISCORD_STATUS: &str = "discord.status";
 pub const DISCORD_IDENTIFIED: &str = "discord.identified";
 pub const LAST_REPORT_AT: &str = "report.last_at";
 pub const LAST_REPORT_RESULT: &str = "report.last_result";
+/// 最近一次被 IP 白名單拒絕的位址與時間。
+pub const LAST_REFUSED: &str = "ssh.last_refused";
 
 impl Store {
     pub fn runtime_get(&self, key: &str) -> Result<Option<String>> {

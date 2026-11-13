@@ -26,6 +26,7 @@ pub fn screen(term: &mut Term, ctx: &Ctx) -> Result<()> {
         format!(" Last heartbeat:   {}", get(runtime::DAEMON_HEARTBEAT)),
         format!(" Discord:          {}", get(runtime::DISCORD_STATUS)),
         format!(" Allowlist:        {}", s.allowed_networks()?.join(", ")),
+        format!(" Last refused:     {}", get(runtime::LAST_REFUSED)),
         format!(" Usage records:    {}", s.record_count()?),
         format!(
             " Last report:      {} {}",
