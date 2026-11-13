@@ -2,7 +2,9 @@
 
 > 最後修改：2026-11-13
 
-使用者安裝與操作請看 [README.md](../README.md)。原始設計草案見 [DESIGN.md](DESIGN.md)。
+使用者文件：[INSTALL.md](INSTALL.md)（安裝、更新、常見問題）、[CLIENT-GUIDE.md](CLIENT-GUIDE.md)、[SERVER-TUI.md](SERVER-TUI.md)、[AGENT-TUI.md](AGENT-TUI.md)。原始設計草案見 [DESIGN.md](DESIGN.md)。
+
+修改設定精靈、TUI 或客戶端畫面時，要同步更新對應的使用者文件。
 
 ## 建置與檢查
 
@@ -55,6 +57,7 @@ whatplus-client ──Status/Schedules/...─────┘  ▲
 | `discord/` | REST（列出 Server／頻道、發訊息，`allowed_mentions` 為空）；`gateway` 只在第一次啟動時 Identify 一次 |
 | `sanitize` | 資料值進 Discord 前：移除控制字元與 bidi 控制字元、跳脫 Markdown、中和 `@`、截斷 |
 | `tui/` | Admin TUI：Authorized keys、Import keys、Network allowlist、System status、Restart service |
+| `setup_cli` | `whatplus-server setup` 的 `status`、`scan`、`add-key`、`allow`：給設定精靈呼叫的非互動指令，輸出 `key=value` 或 Tab 分隔欄位 |
 
 ### 來源端（`whatplus-agent/src`）
 
@@ -63,6 +66,8 @@ whatplus-client ──Status/Schedules/...─────┘  ▲
 - `upload`：先問伺服器這台機器最新一筆的時間，往前 24 小時起重送（伺服器以內容去重），分批送出，每批最多 2000 筆。伺服器沒有資料時全部上傳。
 - `daemon`：每 30 秒讀一次 `agent.json`，間隔到了就上傳。伺服器位址、私鑰、已確認的指紋三者缺一就不連線。
 - `tui/`：Server address、Private key（掃描或產生）、Verify server（TOFU）、Upload interval、Upload now、Re-send all、Show local usage sources。
+- `setup_cli`：`whatplus-agent setup status|server|key|probe|trust|interval|sources`，給設定精靈呼叫。`trust` 的結束代碼：0 成功、3 金鑰被拒、4 是 admin 金鑰、5 指紋改變。
+- 記憶體：image 設定 `WHAT_SOURCES_SINGLE_THREAD=1`，ccusage 一次只讀一個日誌檔。預設每個 CPU 核心同時讀入一整個檔案，100 MB 以上的 Claude 日誌會讓峰值到 840 MB，超過 `mem_limit: 512m` 被 OOM kill；單執行緒約 160 MB。
 
 ### 客戶端（`whatplus-client`）
 
@@ -104,7 +109,7 @@ src/
 | `usage_record` | `(agent_id, record_key)` 唯一。`record_key` 是來源、時間、模型、session 與 token 數的 SHA-256 前 16 bytes；費用不列入，重送時會覆寫費用 |
 | `discord_destination`、`destination_health` | 目的地與最近發送結果 |
 | `report_schedule`、`schedule_run` | 排程與最近一次觸發。修改排程時 `created_at` 重設為現在，避免補送 |
-| `runtime_status` | 心跳、host key 指紋、Discord 狀態、重啟 token、最近報告 |
+| `runtime_status` | 心跳、host key 指紋、Discord 狀態、重啟 token、最近報告、最近一次被白名單拒絕的位址（同一位址每分鐘最多寫一次） |
 
 變更 schema 時要把 `db::SCHEMA_VERSION` 加一並寫升級步驟；變更 `config.conf` 時要把 `config::CONFIG_VERSION` 與 setup 腳本的 `CONFIG_VERSION` 加一。
 
@@ -123,10 +128,20 @@ src/
 
 已知限制：Docker Desktop（Windows／macOS）的 port 轉送不保留來源 IP，伺服器看到的是 Docker 內部的閘道位址，所以白名單無法分辨不同的電腦。建議用 Linux 架伺服器。
 
+## 設定精靈（deploy/*/setup.sh、setup.ps1）
+
+- 參考 GitStatus 的 `setup.sh`：編號步驟、每步說明值從哪裡取得、重跑時 Upgrade／Setup 選單、`upgrade` 參數不問問題。
+- 資料庫操作一律透過 `docker compose --progress quiet run --rm -T <service> setup ...` 呼叫程式內的 `setup_cli`，不在腳本裡寫 SQL。
+- `setup.sh` 與 `setup.ps1` 步驟與文字要保持一致；修改時兩個都要改，並更新 [INSTALL.md](INSTALL.md) 的步驟表。
+- `setup.sh` 在 git 中必須是可執行（`git update-index --chmod=+x`）。
+- PowerShell 5.1：不要對原生指令用 `2>$null`／`*>`（`$ErrorActionPreference = "Stop"` 時會變成例外），改用 `cmd /c "... >nul 2>&1"`。
+- 測試精靈時可以用管線餵答案，但 `Read-Host -AsSecureString` 不讀管線（先建立 `secrets/discord-token`，回答不替換）。
+
 ## 驗證紀錄（2026-11-13）
 
 - `cargo test --workspace` 全數通過。`ssh/tests.rs` 端到端涵蓋：TOFU、指紋不符、未註冊的金鑰、角色限制、重送去重、停用金鑰、空白名單、沒有 admin。
 - 本機實測（Windows，不經 Docker）：來源端讀取真實日誌，上傳 15,453 筆，伺服器筆數一致；客戶端連線、狀態、預覽報告、排程頁、來源機器頁正常。
 - Docker（Windows 11 + Docker Desktop 29.9）：兩個 image 建置成功（各約 126 MB）。伺服器容器：產生 host key、沒有 admin 時拒絕連線、白名單外的連線在握手前關閉、Discord token 錯誤時顯示 `ERROR`。來源端容器以唯讀掛載真實日誌上傳 15,542 筆，三個工具的筆數與原生執行一致（修正 Antigravity WAL 問題後）。伺服器看到的來源 IP 是 `172.17.0.1`（Docker 閘道），證實上述已知限制。
 - 測試時從主機（Windows）直接寫入容器正在使用的 SQLite 會遺失：WAL 的 `-shm` 無法跨主機與 Docker VM 共用。要從主機改資料庫，先停止容器、寫入後 `PRAGMA wal_checkpoint(TRUNCATE)` 再啟動。正式使用一律透過容器內的 TUI，不受影響。
-- **尚未驗證**：實際發送 Discord 訊息（沒有測試用 Bot Token）、TUI 的按鍵操作流程、setup 腳本的互動流程。
+- 設定精靈（Windows + Docker Desktop，以管線餵答案）：伺服器 `setup.ps1` 全新安裝（時區、Token、建置、選 admin 金鑰、白名單、啟動並顯示指紋）與重跑 Setup（顯示並加入 `Last refused` 位址）；來源端 `setup.ps1` 全新安裝（資料夾、建置、伺服器位址、產生金鑰、比對指紋並登入、間隔、第一次上傳 15,612 筆）。
+- **尚未驗證**：實際發送 Discord 訊息（沒有測試用 Bot Token）、TUI 的按鍵操作流程、Linux 上實際執行 `setup.sh`（只做了 `bash -n` 語法檢查；步驟與 `setup.ps1` 相同）。
