@@ -71,7 +71,7 @@
 ### 新增頻道
 
 1. 按「載入 Server 與頻道」。只會列出 Bot 已經加入的 Discord Server。
-2. 選擇 **Discord Server** 與**頻道**。Bot 在頻道需要 View Channels 與 Send Messages 權限。
+2. 選擇 **Discord Server** 與**頻道**。Bot 在頻道需要 View Channels、Send Messages 與 Embed Links 權限（報告是以卡片形式發送，沒有 Embed Links 就無法顯示）。
 3. **名稱**：在客戶端顯示用的名稱。留空時使用「#頻道名稱」。
 4. **報告語言**：English 或繁體中文。
 5. 按「新增」。

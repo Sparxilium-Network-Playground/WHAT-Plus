@@ -9,7 +9,7 @@ use anyhow::{Result, anyhow};
 use whatplus_proto::{Destination, DiscordGuild};
 
 use crate::db::{Store, runtime};
-use crate::report::format::split_messages;
+use crate::report::card::Card;
 use rest::Rest;
 
 pub struct Discord {
@@ -71,21 +71,16 @@ impl Discord {
         tokio::task::spawn_blocking(move || rest.guilds()).await?
     }
 
-    /// 把文字切成多則訊息依序送出；結果寫入 destination_health 並回傳說明。
-    pub async fn deliver(&self, dest: &Destination, text: &str) -> String {
+    /// 把卡片發成一則 embed 訊息；結果寫入 destination_health 並回傳說明。
+    pub async fn deliver(&self, dest: &Destination, card: &Card) -> String {
         let result = match self.rest() {
             Ok(rest) => {
                 let channel = dest.channel_id.clone();
-                let parts = split_messages(text);
-                tokio::task::spawn_blocking(move || -> Result<()> {
-                    for part in parts {
-                        rest.send(&channel, &part)?;
-                    }
-                    Ok(())
-                })
-                .await
-                .map_err(anyhow::Error::from)
-                .and_then(|r| r)
+                let card = card.clone();
+                tokio::task::spawn_blocking(move || rest.send_card(&channel, &card))
+                    .await
+                    .map_err(anyhow::Error::from)
+                    .and_then(|r| r)
             }
             Err(e) => Err(e),
         };

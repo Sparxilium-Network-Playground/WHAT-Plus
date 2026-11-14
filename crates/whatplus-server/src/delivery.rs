@@ -6,24 +6,24 @@ use whatplus_proto::{Destination, Language, ReportContent};
 
 use crate::app::App;
 use crate::db::runtime;
-use crate::report::{self, period::Period};
+use crate::report::{self, card::Card, period::Period};
 
-/// 每種語言只產生一次文字；停用的目的地略過。回傳每個目的地的結果。
+/// 每種語言只產生一次卡片；停用的目的地略過。回傳每個目的地的結果。
 pub async fn send_report(
     app: &App,
     period: &Period,
     content: ReportContent,
     destinations: &[Destination],
 ) -> Result<Vec<String>> {
-    let mut texts: HashMap<Language, String> = HashMap::new();
+    let mut cards: HashMap<Language, Card> = HashMap::new();
     let mut results = Vec::new();
     for dest in destinations {
         if !dest.enabled {
             results.push(format!("{}: skipped (disabled)", dest.name));
             continue;
         }
-        let text = match texts.get(&dest.language) {
-            Some(t) => t.clone(),
+        let card = match cards.get(&dest.language) {
+            Some(c) => c.clone(),
             None => {
                 let t = report::build(
                     &app.store,
@@ -32,11 +32,11 @@ pub async fn send_report(
                     content,
                     dest.language,
                 )?;
-                texts.insert(dest.language, t.clone());
+                cards.insert(dest.language, t.clone());
                 t
             }
         };
-        results.push(app.discord.deliver(dest, &text).await);
+        results.push(app.discord.deliver(dest, &card).await);
     }
     let summary = results.join("; ");
     let _ = app

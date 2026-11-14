@@ -1,6 +1,6 @@
 //! Discord REST API（同步，於 `spawn_blocking` 內呼叫）。
 //!
-//! 只用到：列出 Bot 所在的 Server 與文字頻道、發送訊息。錯誤訊息不含 token。
+//! 只用到：列出 Bot 所在的 Server 與文字頻道、發送 embed 訊息。錯誤訊息不含 token。
 
 use std::time::Duration;
 
@@ -8,6 +8,8 @@ use anyhow::{Result, anyhow, bail};
 use serde::Deserialize;
 use serde_json::json;
 use whatplus_proto::{DiscordChannel, DiscordGuild};
+
+use crate::report::card::Card;
 
 const API: &str = "https://discord.com/api/v10";
 const USER_AGENT: &str = concat!(
@@ -103,12 +105,13 @@ impl Rest {
         Ok(out)
     }
 
-    /// 發送一則訊息；`allowed_mentions` 為空，任何內容都不會觸發提及。遇到 429 會等待後重試一次。
-    pub fn send(&self, channel_id: &str, content: &str) -> Result<()> {
+    /// 把卡片發成一則 embed 訊息；`allowed_mentions` 為空，任何內容都不會觸發提及。
+    /// 遇到 429 會等待後重試一次。Bot 在頻道需要 Embed Links 權限，否則 Discord 不顯示卡片。
+    pub fn send_card(&self, channel_id: &str, card: &Card) -> Result<()> {
         if !valid_snowflake(channel_id) {
             bail!("invalid channel id");
         }
-        let body = json!({ "content": content, "allowed_mentions": { "parse": [] } });
+        let body = json!({ "embeds": [embed(card)], "allowed_mentions": { "parse": [] } });
         for attempt in 0..2 {
             let mut resp = self
                 .agent
@@ -131,15 +134,39 @@ impl Rest {
                     std::thread::sleep(Duration::from_secs_f64(wait));
                 }
                 401 => bail!("Discord rejected the bot token (HTTP 401)"),
-                403 => {
-                    bail!("the bot has no permission to send messages in this channel (HTTP 403)")
-                }
+                // 沒有 Embed Links 權限時，只有 embed 的訊息會被當成空訊息（HTTP 400）。
+                400 => bail!(
+                    "Discord rejected the message (HTTP 400); the bot may lack the Embed Links permission in this channel"
+                ),
+                403 => bail!(
+                    "the bot has no permission to send messages or embed links in this channel (HTTP 403)"
+                ),
                 404 => bail!("channel not found or the bot is not in that server (HTTP 404)"),
                 other => bail!("Discord API returned HTTP {other}"),
             }
         }
         bail!("Discord rate limit")
     }
+}
+
+/// Discord embed 物件。長度已由 [`Card::fit`] 限制。
+fn embed(card: &Card) -> serde_json::Value {
+    let fields: Vec<serde_json::Value> = card
+        .fields
+        .iter()
+        .map(|f| json!({ "name": f.name, "value": f.value, "inline": false }))
+        .collect();
+    let mut e = json!({
+        "title": card.title,
+        "color": card.color,
+        "fields": fields,
+        "footer": { "text": card.footer },
+        "timestamp": jiff::Timestamp::now().to_string(),
+    });
+    if !card.description.is_empty() {
+        e["description"] = json!(card.description);
+    }
+    e
 }
 
 fn redact_path(path: &str) -> &str {

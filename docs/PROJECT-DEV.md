@@ -52,9 +52,9 @@ whatplus-client ──Status/Schedules/...─────┘  ▲
 | `auth` | 公鑰＋白名單快照，依 revision 重新載入（對應 GitStatus 的 RuleSetHolder） |
 | `ssh/` | `mod.rs`：自己 accept TCP，**握手前**檢查白名單與「至少一把 admin」；`handler.rs`：russh Handler；`session.rs`：一問一答迴圈 |
 | `api/` | 請求處理，依角色限制（agent 只能 `Upload` / `UploadState`） |
-| `report/` | `period`（期間與排程時間）、`aggregate`（彙總）、`format`（en / zh-TW 文字、切成 ≤1900 字的訊息） |
+| `report/` | `period`（期間與排程時間）、`aggregate`（彙總）、`format`（en / zh-TW 措辭，產生 `Card`）、`card`（報告卡片：標題、說明、欄位、顏色；`fit()` 套用 Discord embed 長度上限，`to_text()` 給客戶端預覽）。報告以一則 embed 發送，Bot 需要 Embed Links 權限 |
 | `delivery`、`scheduler` | 產生並發送報告；排程每 30 秒檢查 |
-| `discord/` | REST（列出 Server／頻道、發訊息，`allowed_mentions` 為空）；`gateway` 只在第一次啟動時 Identify 一次 |
+| `discord/` | REST（列出 Server／頻道、發 embed 訊息，`allowed_mentions` 為空）；`gateway` 只在第一次啟動時 Identify 一次 |
 | `sanitize` | 資料值進 Discord 前：移除控制字元與 bidi 控制字元、跳脫 Markdown、中和 `@`、截斷 |
 | `tui/` | Admin TUI：Authorized keys、Import keys、Network allowlist、System status、Restart service |
 | `setup_cli` | `whatplus-server setup` 的 `status`、`scan`、`check`、`add-key`、`allow`：給設定精靈呼叫的非互動指令，輸出 `key=value` 或 Tab 分隔欄位。`check` 從 stdin 讀 `label<Tab>公鑰行`：精靈在主機上讀取 `keys/` 與 `~/.ssh`（容器只掛載 `keys/`），選中 `~/.ssh` 的金鑰時把公鑰行複製到 `keys/` 再 `add-key` |

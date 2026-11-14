@@ -1,14 +1,13 @@
-//! 報告文字（每種語言一份措辭）。資料值一律先經 [`crate::sanitize::clean`]。
+//! 報告內容（每種語言一份措辭），產生成 [`Card`]。資料值一律先經 [`crate::sanitize::clean`]。
 
 use what_core::UsageTotals;
 use whatplus_proto::{Language, ReportContent};
 
 use super::aggregate::ReportData;
+use super::card::{COLOR_EMPTY, COLOR_REPORT, COLOR_TEST, Card};
 use super::period::{Period, ReportKind};
 use crate::sanitize::clean;
 
-/// Discord 單則訊息上限 2000 字元，留一點餘裕。
-const MESSAGE_LIMIT: usize = 1900;
 const NAME_LIMIT: usize = 60;
 
 struct Texts {
@@ -99,14 +98,14 @@ fn line(t: &Texts, name: &str, u: &UsageTotals, show_tokens: bool) -> String {
     }
 }
 
-/// 產生報告文字（不分割）。
+/// 產生報告卡片。標題是報告種類，說明是期間與總計，其餘每個區塊一個欄位。
 pub fn render(
     data: &ReportData,
     period: &Period,
     timezone: &str,
     content: ReportContent,
     lang: Language,
-) -> String {
+) -> Card {
     let t = texts(lang);
     let title = match period.kind {
         ReportKind::Daily => t.daily,
@@ -114,22 +113,26 @@ pub fn render(
         ReportKind::Monthly => t.monthly,
         ReportKind::Manual => t.manual,
     };
-    let mut out = vec![
-        format!("**{title}**"),
-        format!("{} ({})", period.label(), clean(timezone, NAME_LIMIT)),
-    ];
+    let mut description = vec![format!(
+        "{} ({})",
+        period.label(),
+        clean(timezone, NAME_LIMIT)
+    )];
 
     if data.totals.requests == 0 {
-        out.push(String::new());
-        out.push(t.no_usage.to_string());
-        return out.join("\n");
+        description.push(String::new());
+        description.push(t.no_usage.to_string());
+        let mut card = Card::new(title, COLOR_EMPTY);
+        card.description = description.join("\n");
+        return card.fit();
     }
 
+    let mut card = Card::new(title, COLOR_REPORT);
     let tok = content.tokens;
     if content.totals {
-        out.push(String::new());
-        out.push(format!(
-            "**{}**: {} · {} {} · {} {}",
+        description.push(String::new());
+        description.push(format!(
+            "**{}**: **{}** · {} {} · {} {}",
             t.total,
             money(data.totals.cost_usd),
             compact(data.totals.tokens.total()),
@@ -139,7 +142,7 @@ pub fn render(
         ));
         if tok {
             let k = &data.totals.tokens;
-            out.push(
+            description.push(
                 t.token_detail
                     .replace("{i}", &compact(k.input))
                     .replace("{o}", &compact(k.output))
@@ -148,68 +151,73 @@ pub fn render(
             );
         }
     }
+    if data.pricing_missing {
+        description.push(String::new());
+        description.push(format!("_{}_", t.pricing_missing));
+    }
+    card.description = description.join("\n");
+
     if content.by_tool && !data.by_tool.is_empty() {
-        out.push(String::new());
-        out.push(format!("**{}**", t.by_tool));
-        for (source, u) in &data.by_tool {
-            out.push(line(t, source.display_name(), u, tok));
-        }
+        let lines: Vec<String> = data
+            .by_tool
+            .iter()
+            .map(|(source, u)| line(t, source.display_name(), u, tok))
+            .collect();
+        card.field(t.by_tool, &lines);
     }
     if content.by_model && !data.by_model.is_empty() {
-        out.push(String::new());
-        out.push(format!("**{}**", t.by_model));
-        for (model, u) in &data.by_model {
-            out.push(line(t, &clean(model, NAME_LIMIT), u, tok));
-        }
+        let mut lines: Vec<String> = data
+            .by_model
+            .iter()
+            .map(|(model, u)| line(t, &clean(model, NAME_LIMIT), u, tok))
+            .collect();
         if let Some(other) = &data.other_models {
-            out.push(line(t, t.other, other, tok));
+            lines.push(line(t, t.other, other, tok));
         }
+        card.field(t.by_model, &lines);
     }
     if content.by_machine && !data.by_machine.is_empty() {
-        out.push(String::new());
-        out.push(format!("**{}**", t.by_machine));
-        for (machine, u) in &data.by_machine {
-            out.push(line(t, &clean(machine, NAME_LIMIT), u, tok));
-        }
+        let lines: Vec<String> = data
+            .by_machine
+            .iter()
+            .map(|(machine, u)| line(t, &clean(machine, NAME_LIMIT), u, tok))
+            .collect();
+        card.field(t.by_machine, &lines);
     }
     if content.top_projects && !data.top_projects.is_empty() {
-        out.push(String::new());
-        out.push(format!("**{}**", t.top_projects));
-        for (machine, project, u) in &data.top_projects {
-            let name = format!(
-                "{} / {}",
-                clean(machine, NAME_LIMIT),
-                clean(project, NAME_LIMIT)
-            );
-            out.push(line(t, &name, u, tok));
-        }
+        let lines: Vec<String> = data
+            .top_projects
+            .iter()
+            .map(|(machine, project, u)| {
+                let name = format!(
+                    "{} / {}",
+                    clean(machine, NAME_LIMIT),
+                    clean(project, NAME_LIMIT)
+                );
+                line(t, &name, u, tok)
+            })
+            .collect();
+        card.field(t.top_projects, &lines);
     }
-    if data.pricing_missing {
-        out.push(String::new());
-        out.push(format!("_{}_", t.pricing_missing));
-    }
-    out.join("\n")
+    card.fit()
 }
 
-/// 依行切成不超過 Discord 上限的多則訊息。
-pub fn split_messages(text: &str) -> Vec<String> {
-    let mut messages = Vec::new();
-    let mut current = String::new();
-    for line in text.lines() {
-        let line: String = line.chars().take(MESSAGE_LIMIT).collect();
-        if current.chars().count() + line.chars().count() + 1 > MESSAGE_LIMIT && !current.is_empty()
-        {
-            messages.push(std::mem::take(&mut current));
-        }
-        if !current.is_empty() {
-            current.push('\n');
-        }
-        current.push_str(&line);
-    }
-    if !current.is_empty() {
-        messages.push(current);
-    }
-    messages
+/// 「這個頻道已設定為報告目的地」的測試卡片。
+pub fn test_card(destination_name: &str, lang: Language) -> Card {
+    let name = clean(destination_name, NAME_LIMIT);
+    let (title, body) = match lang {
+        Language::En => (
+            "WHAT Plus test message",
+            format!("This channel is set up as a report destination \"{name}\"."),
+        ),
+        Language::ZhTw => (
+            "WHAT Plus 測試訊息",
+            format!("此頻道已設定為報告目的地「{name}」。"),
+        ),
+    };
+    let mut card = Card::new(title, COLOR_TEST);
+    card.description = body;
+    card.fit()
 }
 
 #[cfg(test)]
@@ -229,7 +237,9 @@ mod tests {
             ReportContent::default(),
             Language::En,
         );
-        assert!(en.contains("No usage"));
+        assert!(en.description.contains("No usage"));
+        assert_eq!(en.color, COLOR_EMPTY);
+        assert!(en.fields.is_empty());
         let zh = render(
             &ReportData::default(),
             &p,
@@ -237,18 +247,16 @@ mod tests {
             ReportContent::default(),
             Language::ZhTw,
         );
-        assert!(zh.contains("沒有用量"));
+        assert!(zh.description.contains("沒有用量"));
     }
 
     #[test]
-    fn split_respects_limit() {
-        let text = (0..500)
-            .map(|i| format!("line {i}"))
-            .collect::<Vec<_>>()
-            .join("\n");
-        let parts = split_messages(&text);
-        assert!(parts.len() > 1);
-        assert!(parts.iter().all(|p| p.chars().count() <= MESSAGE_LIMIT));
+    fn test_card_mentions_destination() {
+        let card = test_card("Server / #dev @everyone", Language::ZhTw);
+        assert_eq!(card.title, "WHAT Plus 測試訊息");
+        // `#` 會被跳脫成 `\#`（Markdown），顯示時仍是 `#`。
+        assert!(card.description.contains("Server / \\#dev"));
+        assert!(!card.description.contains("@everyone"));
     }
 
     #[test]

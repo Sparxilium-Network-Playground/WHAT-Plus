@@ -77,11 +77,8 @@ pub async fn test_destination(app: &App, id: i64) -> ApiResult {
         .store
         .destination(id)?
         .ok_or_else(|| ApiError::User("destination not found".into()))?;
-    let text = match dest.language {
-        Language::En => "**WHAT Plus** test message. Reports will be delivered to this channel.",
-        Language::ZhTw => "**WHAT Plus** 測試訊息。報告會發送到這個頻道。",
-    };
-    let result = app.discord.deliver(&dest, text).await;
+    let card = crate::report::format::test_card(&dest.name, dest.language);
+    let result = app.discord.deliver(&dest, &card).await;
     Ok(Response::Sent {
         results: vec![result],
     })
@@ -112,14 +109,16 @@ pub fn delete_schedule(app: &App, id: i64) -> ApiResult {
 
 pub fn preview(app: &App, range: ManualRange, content: ReportContent, lang: Language) -> ApiResult {
     let period = manual_period(range, &app.now())?;
-    let text = report::build(
+    let card = report::build(
         &app.store,
         &period,
         &app.settings.timezone_name,
         content,
         lang,
     )?;
-    Ok(Response::Preview { text })
+    Ok(Response::Preview {
+        text: card.to_text(),
+    })
 }
 
 pub async fn send(app: &App, range: ManualRange, content: ReportContent, ids: &[i64]) -> ApiResult {

@@ -114,8 +114,8 @@ msgstr "報告語言"
 msgid "Add"
 msgstr "新增"
 
-msgid "Only servers the bot has joined are listed. The bot needs View Channels and Send Messages in the channel."
-msgstr "只會列出 Bot 已加入的 Server。Bot 需要該頻道的「檢視頻道」與「傳送訊息」權限。"
+msgid "Only servers the bot has joined are listed. The bot needs View Channels, Send Messages and Embed Links in the channel."
+msgstr "只會列出 Bot 已加入的 Server。Bot 需要該頻道的「檢視頻道」、「傳送訊息」與「嵌入連結」權限。"
 
 msgid "Machines"
 msgstr "來源機器"

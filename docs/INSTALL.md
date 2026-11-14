@@ -20,7 +20,7 @@
 
 - 按 **Reset Token** → **Copy**，複製 **Bot Token**（等一下伺服器精靈會問）。Token 只顯示一次，忘記的話再按一次 Reset Token。
 - **不需要**開啟任何 Privileged Gateway Intents。
-- 左側 **OAuth2** → **URL Generator**：Scope 只勾 `bot`，Bot Permissions 勾 **View Channels**、**Send Messages**。
+- 左側 **OAuth2** → **URL Generator**：Scope 只勾 `bot`，Bot Permissions 勾 **View Channels**、**Send Messages**、**Embed Links**（報告以卡片形式發送，需要這個權限）。
 - 用產生的連結把 Bot 邀請到你的 Discord Server。
 
 Bot 只會發報告，不會讀取或回覆頻道裡的訊息。
@@ -205,7 +205,7 @@ git pull && ./setup.sh upgrade
 Token 錯誤或已被重設。在 `deploy/server/` 重新執行精靈、選 **2) Setup**，在第 2 步更換 Token。
 
 **頻道收不到報告**
-在管理客戶端的 **Discord 頻道**頁按「測試」。失敗通常是 Bot 不在那個 Server，或在頻道沒有 View Channels／Send Messages 權限。
+在管理客戶端的 **Discord 頻道**頁按「測試」。失敗通常是 Bot 不在那個 Server，或在頻道沒有 View Channels／Send Messages／Embed Links 權限。錯誤訊息出現 `HTTP 400` 或 `Embed Links` 時，到 Discord 的 Server 設定 → 身分組，或頻道的權限設定，替 Bot 加上 **Embed Links**（嵌入連結）。
 
 **伺服器停機時錯過的排程**
 停機 6 小時內恢復的會補送；超過 6 小時的不會補送，避免一次湧入很多舊報告。
