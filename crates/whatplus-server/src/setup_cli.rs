@@ -5,6 +5,8 @@
 //!
 //! - `setup status`                       → `fingerprint=`、`admins=`、`agents=`、`allowlist=`、`last_refused=`
 //! - `setup scan`                         → 每把公鑰一行：`state  fingerprint  file:line  comment`
+//! - `setup check`                        → stdin 每行 `label<Tab>公鑰行`（精靈在主機上讀取 keys/ 與
+//!   ~/.ssh，容器不必掛載 ~/.ssh）；每把公鑰輸出一行：`state  fingerprint  label  comment  公鑰行`
 //! - `setup add-key <fingerprint> <admin|agent> <name>`
 //! - `setup allow <cidr>`
 
@@ -34,6 +36,7 @@ fn dispatch(settings: &Settings, args: &[String]) -> Result<()> {
     match arg(0) {
         "status" => status(settings),
         "scan" => scan(settings),
+        "check" => check(settings),
         "add-key" => add_key(settings, arg(1), arg(2), arg(3)),
         "allow" => allow(settings, arg(1)),
         other => bail!(
@@ -77,14 +80,68 @@ fn scan(settings: &Settings) -> Result<()> {
             continue;
         };
         let fp = keys::fingerprint(key);
-        let state = registered
-            .iter()
-            .find(|k| k.fingerprint == fp)
-            .map(|k| k.role.as_str())
-            .unwrap_or("new");
+        let state = key_state(&registered, &fp);
         println!("{state}\t{fp}\t{place}\t{}", one_line(&keys::comment(key)));
     }
     Ok(())
+}
+
+/// `state`：`new`、已註冊的角色（`admin` / `agent`）或 `unsupported`。
+fn key_state(registered: &[whatplus_proto::KeyInfo], fp: &str) -> &'static str {
+    registered
+        .iter()
+        .find(|k| k.fingerprint == fp)
+        .map(|k| k.role.as_str())
+        .unwrap_or("new")
+}
+
+fn check(settings: &Settings) -> Result<()> {
+    let store = Store::open(&settings.database)?;
+    let registered = store.list_keys()?;
+    for row in check_lines(&registered, std::io::stdin().lock())? {
+        println!("{row}");
+    }
+    Ok(())
+}
+
+/// 輸入每行 `label<Tab>公鑰行`；一個檔案有多把公鑰時，精靈會逐行送進來，每把各輸出一行。
+fn check_lines(
+    registered: &[whatplus_proto::KeyInfo],
+    input: impl std::io::BufRead,
+) -> Result<Vec<String>> {
+    let mut out = Vec::new();
+    for line in input.lines() {
+        let line = line?;
+        // Windows PowerShell 5.1 會在送給原生程式的文字開頭加 BOM。
+        let line = line.trim_start_matches('\u{feff}');
+        let Some((label, raw)) = line.split_once('\t') else {
+            continue;
+        };
+        let raw = raw.trim();
+        if raw.is_empty() || raw.starts_with('#') {
+            continue;
+        }
+        let label = one_line(label);
+        out.push(match keys::parse_public_key_line(raw) {
+            Ok(key) if keys::is_supported(&key) => {
+                let fp = keys::fingerprint(&key);
+                // 空欄位會讓 shell 的 `read` 合併相鄰的 Tab，所以沒有註解時輸出 `-`。
+                let comment = one_line(keys::comment(&key).trim());
+                format!(
+                    "{}\t{fp}\t{label}\t{}\t{}",
+                    key_state(registered, &fp),
+                    if comment.is_empty() { "-" } else { &comment },
+                    one_line(&keys::to_line(&key))
+                )
+            }
+            Ok(key) => format!(
+                "unsupported\t-\t{label}\t{}\t-",
+                one_line(key.algorithm().as_ref())
+            ),
+            Err(_) => format!("unsupported\t-\t{label}\tunreadable\t-"),
+        });
+    }
+    Ok(out)
 }
 
 fn add_key(settings: &Settings, fingerprint: &str, role: &str, name: &str) -> Result<()> {
@@ -126,4 +183,32 @@ fn one_line(text: &str) -> String {
     text.chars()
         .map(|c| if c.is_control() { ' ' } else { c })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn check_lists_every_key_and_strips_options() {
+        let a = keys::generate_ed25519("laptop").unwrap().1;
+        let b = keys::generate_ed25519("desktop").unwrap().1;
+        let input = format!(
+            "\u{feff}~/.ssh/team.pub:1\t{a}\n~/.ssh/team.pub:2\t{b}\n\
+             ~/.ssh/authorized_keys:1\trestrict,from=\"10.0.0.1\" {b}\n\
+             ~/.ssh/id_rsa.pub:1\tssh-rsa AAAAB3NzaC1yc2E bad\n\
+             ~/.ssh/x.pub:2\t# comment\n"
+        );
+        let rows = check_lines(&[], input.as_bytes()).unwrap();
+        assert_eq!(rows.len(), 4);
+        let cols: Vec<Vec<&str>> = rows.iter().map(|r| r.split('\t').collect()).collect();
+        assert_eq!(cols[0][0], "new");
+        assert_eq!(cols[0][2], "~/.ssh/team.pub:1");
+        assert_eq!(cols[0][3], "laptop");
+        assert_eq!(cols[1][3], "desktop");
+        // authorized_keys 的選項被去掉，輸出可直接寫成 .pub 的公鑰行。
+        assert_eq!(cols[2][4], b.trim());
+        assert_eq!(cols[2][1], cols[1][1]);
+        assert_eq!(cols[3][0], "unsupported");
+    }
 }

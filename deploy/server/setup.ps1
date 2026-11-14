@@ -12,6 +12,9 @@
 param([string]$Mode = "")
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
+# Text piped to and read from docker is UTF-8 (key comments may contain non-ASCII text).
+$OutputEncoding = New-Object System.Text.UTF8Encoding $false
+try { [Console]::OutputEncoding = $OutputEncoding } catch { }
 
 $ConfigVersion = 1   # matches config::CONFIG_VERSION in the server
 $Config = "config\config.conf"
@@ -130,42 +133,97 @@ if ($Mode -eq "setup") {
 
     # ---- 4. Admin key ----------------------------------------------------------
     Bold "4/6  Admin key  (the Windows client app)"
-    Write-Host "  The client app logs in with an SSH key. On the computer that runs the client:"
-    Write-Host '      ssh-keygen -t ed25519 -f $env:USERPROFILE\.ssh\whatplus_admin -C "whatplus-admin"'
-    Write-Host "  Then copy the PUBLIC key (whatplus_admin.pub, never the file without .pub) into"
+    $SshDir = Join-Path $env:USERPROFILE ".ssh"
+    Write-Host "  The client app logs in with an SSH key (ssh-ed25519). This step lists every public key in"
+    Write-Host "      $SshDir\   *.pub and authorized_keys (the keys that may log in to this computer)"
     Write-Host "      $PSScriptRoot\keys\"
-    Write-Host "  One file may contain several keys, one per line. Only ssh-ed25519 keys are supported."
+    Write-Host "  A file with several keys (one per line) shows each key separately; pick the one to use."
+    Write-Host ""
+    Write-Host "  To use a dedicated key instead, create it on the computer that runs the client:"
+    Write-Host '      ssh-keygen -t ed25519 -f $env:USERPROFILE\.ssh\whatplus_admin -C "whatplus-admin"'
+    Write-Host "  and copy whatplus_admin.pub (never the file without .pub) into $PSScriptRoot\keys\"
+
+    # KeyLines: "label<TAB>line" for every line of the public key files (input of "setup check").
+    # Files are read here on the host; the container only mounts keys\.
+    function KeyLines {
+        $sources = @()
+        $sources += Get-ChildItem "keys" -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -like "*.pub" -or $_.Name -like "authorized_keys*" } |
+            ForEach-Object { @{ Path = $_.FullName; Label = "keys\$($_.Name)" } }
+        $sources += Get-ChildItem $SshDir -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -like "*.pub" -or $_.Name -like "authorized_keys*" } |
+            ForEach-Object { @{ Path = $_.FullName; Label = "~\.ssh\$($_.Name)" } }
+        $adminKeys = Join-Path $env:ProgramData "ssh\administrators_authorized_keys"
+        if (Test-Path $adminKeys) { $sources += @{ Path = $adminKeys; Label = $adminKeys } }
+        foreach ($s in $sources) {
+            try { $lines = @(Get-Content -LiteralPath $s.Path -Encoding UTF8 -ErrorAction Stop) } catch { continue }
+            for ($i = 0; $i -lt $lines.Count; $i++) {
+                if ($lines[$i].Trim()) { "$($s.Label):$($i + 1)`t$($lines[$i])" }
+            }
+        }
+    }
+    function SrvCheck { $input | docker compose --progress quiet run --rm -T --no-deps server setup check }
+
+    # ImportLine LABEL NAME LINE: copies a key from .ssh into keys\ (only the public key line)
+    function ImportLine($label, $name, $line) {
+        $base = $name -replace '[^A-Za-z0-9_-]', '_'
+        if ($base -notmatch '[A-Za-z0-9]') { $base = "key" }
+        $file = "keys\admin-$base.pub"
+        $n = 2
+        while (Test-Path $file) { $file = "keys\admin-$base-$n.pub"; $n++ }
+        Write-Utf8NoBom $file "$line`n"
+        Ok "Copied the public key from $label to $file"
+    }
+
     function AddAdmin {
         while ($true) {
-            $rows = @(Srv scan | Where-Object { $_ })
-            $new = @($rows | Where-Object { $_.Split("`t")[0] -eq "new" })
+            $checked = @(KeyLines | SrvCheck | Where-Object { $_ })
+            $seen = @{}
+            $rows = @()
+            $login = @{}
+            foreach ($r in $checked) {
+                $f = $r.Split("`t")
+                if ($f[2] -match 'authorized_keys') { $login[$f[1]] = $true }
+                # one row per key; the same key in several files is listed once
+                if ($f[1] -ne "-") { if ($seen.ContainsKey($f[1])) { continue }; $seen[$f[1]] = $true }
+                $rows += , $f
+            }
+            $new = @()
             Write-Host ""
-            if ($rows.Count -gt 0) {
-                Write-Host "  Keys in keys\:"
-                foreach ($r in $rows) {
-                    $f = $r.Split("`t")
-                    $state = if ($f[0] -eq "new") { "" } else { "[$($f[0])]" }
-                    Write-Host ("    {0,-12} {1,-52} {2}  {3}" -f $state, $f[1], $f[2], $f[3])
+            if ($rows.Count -eq 0) {
+                Warn "No public keys found in $SshDir\ or $PSScriptRoot\keys\."
+            } else {
+                Write-Host "  Public keys found:"
+                foreach ($f in $rows) {
+                    switch ($f[0]) {
+                        "new" {
+                            $new += , $f
+                            Write-Host ("    {0,2}) {1,-34} {2,-24} {3}" -f $new.Count, $f[2], $f[3], $f[1])
+                        }
+                        "unsupported" { Write-Host ("        {0,-34} (not usable: {1})" -f $f[2], $f[3]) }
+                        default { Write-Host ("        {0,-34} {1,-24} already registered as {2}" -f $f[2], $f[3], $f[0]) }
+                    }
                 }
             }
             if ($new.Count -eq 0) {
-                Warn "No new ssh-ed25519 key in keys\ yet."
-                $a = Read-Host "  Copy the .pub file there and press Enter to search again (or type s to skip)"
+                Warn "No ssh-ed25519 key that is not registered yet."
+                $a = Read-Host "  Copy the .pub file into $PSScriptRoot\keys\ and press Enter to search again (or type s to skip)"
                 if ($a -eq "s") { return $false }
                 continue
             }
             Write-Host ""
-            Write-Host "  Not registered yet:"
-            for ($i = 0; $i -lt $new.Count; $i++) {
-                $f = $new[$i].Split("`t")
-                Write-Host ("    {0}) {1}  {2}  {3}" -f ($i + 1), $f[1], $f[2], $f[3])
-            }
-            $n = Read-Host "  Which one is the client's admin key? [1-$($new.Count), Enter = search again]"
+            $n = Read-Host "  Which one is the client's admin key? [1-$($new.Count), Enter = search again, s = skip]"
+            if ($n -eq "s") { return $false }
             if ($n -notmatch '^\d+$' -or [int]$n -lt 1 -or [int]$n -gt $new.Count) { continue }
-            $f = $new[[int]$n - 1].Split("`t")
-            $default = if ($f[3]) { $f[3] } else { "admin" }
+            $f = $new[[int]$n - 1]
+            if ($login.ContainsKey($f[1])) {
+                Write-Host "  This key can also log in to this computer over SSH (it is in authorized_keys)."
+                if (-not (AskYes "Use it as the WHAT Plus admin key too?" "Y")) { continue }
+            }
+            $default = if ($f[3] -ne "-") { $f[3] } else { "admin" }
             $name = Read-Host "  Name for this key [$default]"
             if (-not $name) { $name = $default }
+            if (-not $f[2].StartsWith("keys\")) { ImportLine $f[2] $name $f[4] }
             Srv add-key $f[1] admin $name | Out-Null
             if ($LASTEXITCODE -eq 0) { Ok "Registered $($f[1]) as admin `"$name`""; return $true }
             Warn "Could not register the key; see the message above."

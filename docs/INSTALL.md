@@ -25,9 +25,15 @@
 
 Bot 只會發報告，不會讀取或回覆頻道裡的訊息。
 
-## 2. 產生管理客戶端的金鑰
+## 2. 準備管理客戶端的金鑰
 
-在要執行管理客戶端的 Windows 電腦開啟 PowerShell，產生一把**專用**金鑰：
+管理客戶端用一把 `ssh-ed25519` 金鑰登入伺服器。有兩種做法，選一種：
+
+**A. 沿用你登入伺服器用的金鑰（最簡單）**
+如果你平常就是用 SSH 金鑰從這台 Windows 電腦登入伺服器，那把金鑰的公鑰已經在伺服器的 `~/.ssh/authorized_keys` 裡，伺服器設定精靈會直接列出來讓你選，不用複製任何檔案。能 SSH 登入伺服器的人本來就能修改它的所有設定，所以沿用這把金鑰不會讓權限變大；只是以後要撤銷其中一個用途時，兩個要一起換。
+
+**B. 產生一把專用金鑰**
+在要執行管理客戶端的 Windows 電腦開啟 PowerShell：
 
 ```powershell
 ssh-keygen -t ed25519 -f $env:USERPROFILE\.ssh\whatplus_admin -C "whatplus-admin"
@@ -35,7 +41,6 @@ ssh-keygen -t ed25519 -f $env:USERPROFILE\.ssh\whatplus_admin -C "whatplus-admin
 
 - 可以設定 passphrase（客戶端連線時會詢問，不會記住）。
 - 會產生兩個檔案：`whatplus_admin`（**私鑰**，留在這台電腦，不要給任何人）與 `whatplus_admin.pub`（**公鑰**，等一下要放到伺服器）。
-- 建議不要拿平常登入其他主機的金鑰來用。
 
 ## 3. 安裝伺服器
 
@@ -49,7 +54,7 @@ git clone https://github.com/Sparxilium-Network-Playground/WHAT-Plus.git
 cd WHAT-Plus/deploy/server
 ```
 
-把步驟 2 的**公鑰**（`whatplus_admin.pub`）放進 `deploy/server/keys/`。例如在 Windows 電腦上執行（換成你的帳號與伺服器位址）：
+步驟 2 選 **B** 的話，先把**公鑰**（`whatplus_admin.pub`）放到伺服器，`deploy/server/keys/` 或你帳號的 `~/.ssh/` 都可以。例如在 Windows 電腦上執行（換成你的帳號與伺服器位址）：
 
 ```powershell
 scp $env:USERPROFILE\.ssh\whatplus_admin.pub user@192.168.1.10:~/WHAT-Plus/deploy/server/keys/
@@ -76,7 +81,7 @@ scp $env:USERPROFILE\.ssh\whatplus_admin.pub user@192.168.1.10:~/WHAT-Plus/deplo
 | 1. Time zone | 報告使用的時區，例如 `Asia/Taipei`（直接按 Enter 使用預設值）。每日報告的「前一天」、每月報告的「上個月」都依這個時區計算 |
 | 2. Discord bot token | 步驟 1 複製的 Token。輸入時畫面不會顯示，也不會留在指令歷史紀錄裡 |
 | 3. Building the image | 不用輸入。第一次建置需要幾分鐘，完成後會顯示伺服器的**指紋**（`SHA256:...`） |
-| 4. Admin key | 精靈會列出 `keys/` 裡還沒註冊的公鑰，輸入編號選擇管理客戶端的金鑰，再取個名字（預設是公鑰的註解）。還沒放進來的話，放好後按 Enter 重新搜尋 |
+| 4. Admin key | 精靈會列出 `deploy/server/keys/` 與執行精靈的帳號 `~/.ssh/` 裡所有 `*.pub` 與 `authorized_keys` 的公鑰。**一個檔案有多把公鑰時逐把列出**（例如 `team.pub:2` 是那個檔案的第 2 行），輸入編號選擇管理客戶端用的那一把，再取個名字（預設是公鑰的註解）。選的金鑰在 `authorized_keys` 裡時，精靈會提醒它也是 SSH 登入用的金鑰並再確認一次。從 `~/.ssh` 選的公鑰會複製一份到 `keys/`（只有公鑰，不會讀取或複製私鑰）。已註冊的金鑰與不支援的類型（例如 `ssh-rsa`）會列出但不能選 |
 | 5. Network allowlist | 允許連線的區網範圍。精靈會依伺服器的 IP 建議一個範圍（例如 `192.168.0.0/16` 代表所有 `192.168.x.x`），按 Enter 接受，或輸入更小的範圍，例如 `192.168.1.0/24` 或單一電腦 `192.168.1.20` |
 | 6. Starting the service | 按 Enter 啟動。看到 `OK  The service is running.` 和伺服器指紋就完成了 |
 
@@ -99,7 +104,7 @@ cargo build --release -p whatplus-client
 第一次連線：
 
 1. **連線**頁：填入伺服器的區網位址（例如 `192.168.1.10`），port 維持 `33445`。
-2. 在「.ssh 中的金鑰」選 `whatplus_admin`，有 passphrase 的話填入。
+2. 在「.ssh 中的金鑰」選步驟 2 準備的金鑰（沿用登入用的金鑰，或專用的 `whatplus_admin`），有 passphrase 的話填入。
 3. 按「連線」。畫面會顯示伺服器指紋，與步驟 3 記下的**完全相同**才按「信任並連線」。
 
 接著到 **Discord 頻道**頁新增要收報告的頻道，按「測試」確認 Bot 能發訊息。詳細操作見[管理客戶端使用指南](CLIENT-GUIDE.md)。

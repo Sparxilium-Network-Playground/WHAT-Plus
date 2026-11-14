@@ -57,7 +57,7 @@ whatplus-client ──Status/Schedules/...─────┘  ▲
 | `discord/` | REST（列出 Server／頻道、發訊息，`allowed_mentions` 為空）；`gateway` 只在第一次啟動時 Identify 一次 |
 | `sanitize` | 資料值進 Discord 前：移除控制字元與 bidi 控制字元、跳脫 Markdown、中和 `@`、截斷 |
 | `tui/` | Admin TUI：Authorized keys、Import keys、Network allowlist、System status、Restart service |
-| `setup_cli` | `whatplus-server setup` 的 `status`、`scan`、`add-key`、`allow`：給設定精靈呼叫的非互動指令，輸出 `key=value` 或 Tab 分隔欄位 |
+| `setup_cli` | `whatplus-server setup` 的 `status`、`scan`、`check`、`add-key`、`allow`：給設定精靈呼叫的非互動指令，輸出 `key=value` 或 Tab 分隔欄位。`check` 從 stdin 讀 `label<Tab>公鑰行`：精靈在主機上讀取 `keys/` 與 `~/.ssh`（容器只掛載 `keys/`），選中 `~/.ssh` 的金鑰時把公鑰行複製到 `keys/` 再 `add-key` |
 
 ### 來源端（`whatplus-agent/src`）
 

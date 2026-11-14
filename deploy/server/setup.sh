@@ -31,6 +31,8 @@ CONFIG_EXAMPLE=config/config.conf.example
 # config.conf format version this script writes; matches config::CONFIG_VERSION in the server
 CONFIG_VERSION=1
 TOKEN=secrets/discord-token
+# home of the user who ran sudo: the admin key is looked up in its .ssh/
+USER_HOME=$(getent passwd "${SUDO_USER:-root}" | cut -d: -f6)
 MODE=
 case ${1:-} in
   "") ;;
@@ -192,43 +194,101 @@ ok "Server fingerprint: $fingerprint"
 
 # ---- 4. Admin key ------------------------------------------------------------
 bold "4/6  Admin key  (the Windows client app)"
+SSH_DIR=$USER_HOME/.ssh
 cat <<EOF
-  The client app logs in with an SSH key. On the Windows computer that runs the client:
-      ssh-keygen -t ed25519 -f \$env:USERPROFILE\\.ssh\\whatplus_admin -C "whatplus-admin"
-  Then copy the PUBLIC key (whatplus_admin.pub, never the file without .pub) into
+  The client app logs in with an SSH key (ssh-ed25519). This step lists every public key in
+      $SSH_DIR/   *.pub and authorized_keys (the keys that may log in to this server)
       $PWD/keys/
-  for example:  scp \$env:USERPROFILE\\.ssh\\whatplus_admin.pub ${SUDO_USER:-user}@$(hostname -I 2>/dev/null | awk '{print $1}'):$PWD/keys/
-  One file may contain several keys, one per line. Only ssh-ed25519 keys are supported.
+  A file with several keys (one per line) shows each key separately; pick the one to use.
+
+  To use a dedicated key instead, create it on the Windows computer that runs the client:
+      ssh-keygen -t ed25519 -f \$env:USERPROFILE\\.ssh\\whatplus_admin -C "whatplus-admin"
+  and copy whatplus_admin.pub (never the file without .pub) into $PWD/keys/, for example:
+      scp \$env:USERPROFILE\\.ssh\\whatplus_admin.pub ${SUDO_USER:-user}@$(hostname -I 2>/dev/null | awk '{print $1}'):$PWD/keys/
 EOF
+
+# key_lines: "label<TAB>line" for every line of the public key files (input of "setup check").
+# Files are read here on the host; the container only mounts keys/.
+key_lines() {
+  local f label n line
+  for f in keys/*.pub keys/authorized_keys* "$SSH_DIR"/*.pub "$SSH_DIR"/authorized_keys*; do
+    [ -f "$f" ] || continue
+    case $f in
+      keys/*) label="keys/${f##*/}" ;;
+      *) label="~/.ssh/${f##*/}" ;;
+    esac
+    n=0
+    while IFS= read -r line || [ -n "$line" ]; do
+      n=$((n + 1))
+      line=${line%$'\r'}
+      [ -n "${line// /}" ] && printf '%s:%d\t%s\n' "$label" "$n" "$line"
+    done <"$f"
+  done
+}
+
+# import_line LABEL NAME LINE: copies a key from ~/.ssh into keys/ (only the public key line)
+import_line() {
+  local base file i=2
+  base=$(printf '%s' "$2" | LC_ALL=C tr -c 'A-Za-z0-9_-' '_')
+  [[ $base =~ [A-Za-z0-9] ]] || base=key
+  file=keys/admin-$base.pub
+  while [ -e "$file" ]; do
+    file=keys/admin-$base-$i.pub
+    i=$((i + 1))
+  done
+  printf '%s\n' "$3" >"$file"
+  chmod 644 "$file"
+  ok "Copied the public key from $1 to $file"
+}
+
 add_admin() {
-  local rows new n name default
+  local checked rows new login n name default state fp label comment line
   while true; do
     fix_permissions >/dev/null
-    mapfile -t rows < <(srv scan)
-    mapfile -t new < <(printf '%s\n' "${rows[@]}" | awk -F'\t' '$1 == "new"')
+    checked=$(key_lines | srv check)
+    # one row per key; the same key in several files is listed once
+    mapfile -t rows < <(awk -F'\t' 'NF && ($2 == "-" || !seen[$2]++)' <<<"$checked")
+    # fingerprints of keys that may also log in to this server over SSH
+    login=$(awk -F'\t' '$3 ~ /authorized_keys/ { print $2 }' <<<"$checked")
+    new=()
     echo
-    if [ ${#rows[@]} -gt 0 ]; then
-      echo "  Keys in keys/:"
-      printf '%s\n' "${rows[@]}" | awk -F'\t' '{ printf "    %-12s %-52s %s  %s\n", ($1 == "new" ? "" : "[" $1 "]"), $2, $3, $4 }'
+    if [ ${#rows[@]} -eq 0 ]; then
+      warn "No public keys found in $SSH_DIR/ or $PWD/keys/."
+    else
+      echo "  Public keys found:"
+      for row in "${rows[@]}"; do
+        IFS=$'\t' read -r state fp label comment line <<<"$row"
+        case $state in
+          new)
+            new+=("$row")
+            printf '    %2d) %-34s %-24s %s\n' ${#new[@]} "$label" "$comment" "$fp" ;;
+          unsupported)
+            printf '        %-34s (not usable: %s)\n' "$label" "$comment" ;;
+          *)
+            printf '        %-34s %-24s already registered as %s\n' "$label" "$comment" "$state" ;;
+        esac
+      done
     fi
     if [ ${#new[@]} -eq 0 ]; then
-      warn "No new ssh-ed25519 key in $PWD/keys/ yet."
-      read -rp "  Copy the .pub file there and press Enter to search again (or type s to skip): " n
+      warn "No ssh-ed25519 key that is not registered yet."
+      read -rp "  Copy the .pub file into $PWD/keys/ and press Enter to search again (or type s to skip): " n
       [ "$n" = s ] && return 1
       continue
     fi
     echo
-    echo "  Not registered yet:"
-    for i in "${!new[@]}"; do
-      IFS=$'\t' read -r _ fp place comment <<<"${new[i]}"
-      printf '    %d) %s  %s  %s\n' $((i + 1)) "$fp" "$place" "$comment"
-    done
-    read -rp "  Which one is the client's admin key? [1-${#new[@]}, Enter = search again]: " n
+    read -rp "  Which one is the client's admin key? [1-${#new[@]}, Enter = search again, s = skip]: " n
+    [ "$n" = s ] && return 1
     [[ $n =~ ^[0-9]+$ ]] && [ "$n" -ge 1 ] && [ "$n" -le ${#new[@]} ] || continue
-    IFS=$'\t' read -r _ fp place comment <<<"${new[n - 1]}"
-    default=${comment:-admin}
+    IFS=$'\t' read -r state fp label comment line <<<"${new[n - 1]}"
+    if grep -qxF -- "$fp" <<<"$login"; then
+      echo "  This key can also log in to this server over SSH (it is in authorized_keys)."
+      ask_yes "Use it as the WHAT Plus admin key too?" Y || continue
+    fi
+    default=$comment
+    [ "$default" = - ] && default=admin
     read -rp "  Name for this key [$default]: " name
     name=${name:-$default}
+    [[ $label == "~/.ssh/"* ]] && import_line "$label" "$name" "$line"
     if srv add-key "$fp" admin "$name" >/dev/null; then
       ok "Registered $fp as admin \"$name\""
       return 0
