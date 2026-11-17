@@ -9,11 +9,13 @@ use crate::db::runtime;
 use crate::report::{self, card::Card, period::Period};
 
 /// 每種語言只產生一次卡片；停用的目的地略過。回傳每個目的地的結果。
+/// `language` 為 `Some` 時覆蓋各目的地自己的語言（手動推送用）。
 pub async fn send_report(
     app: &App,
     period: &Period,
     content: ReportContent,
     destinations: &[Destination],
+    language: Option<Language>,
 ) -> Result<Vec<String>> {
     let mut cards: HashMap<Language, Card> = HashMap::new();
     let mut results = Vec::new();
@@ -22,7 +24,8 @@ pub async fn send_report(
             results.push(format!("{}: skipped (disabled)", dest.name));
             continue;
         }
-        let card = match cards.get(&dest.language) {
+        let lang = language.unwrap_or(dest.language);
+        let card = match cards.get(&lang) {
             Some(c) => c.clone(),
             None => {
                 let t = report::build(
@@ -30,9 +33,9 @@ pub async fn send_report(
                     period,
                     &app.settings.timezone_name,
                     content,
-                    dest.language,
+                    lang,
                 )?;
-                cards.insert(dest.language, t.clone());
+                cards.insert(lang, t.clone());
                 t
             }
         };

@@ -79,7 +79,8 @@ pub async fn handle(app: &App, who: &Identity, req: Request) -> Response {
             range,
             content,
             destination_ids,
-        } => admin_reports::send(app, range, content, &destination_ids).await,
+            language,
+        } => admin_reports::send(app, range, content, &destination_ids, language).await,
     };
     result.unwrap_or_else(|e| e.into_response())
 }

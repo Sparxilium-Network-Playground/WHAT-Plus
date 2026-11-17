@@ -210,8 +210,11 @@ msgstr "預覽"
 msgid "Preview language"
 msgstr "預覽語言"
 
-msgid "Each channel receives the report in its own language. Data comes from what the machines have uploaded so far."
-msgstr "每個頻道會收到它自己設定的語言。資料來自各機器目前已上傳的紀錄。"
+msgid "With \"Each channel's own language\", every channel receives the report in the language set for it. Data comes from what the machines have uploaded so far."
+msgstr "選「各頻道自己的語言」時，每個頻道會收到它自己設定的語言。資料來自各機器目前已上傳的紀錄。"
+
+msgid "Each channel's own language"
+msgstr "各頻道自己的語言"
 
 msgid "New schedule"
 msgstr "新增排程"

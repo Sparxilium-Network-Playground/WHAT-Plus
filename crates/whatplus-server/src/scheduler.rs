@@ -106,7 +106,7 @@ async fn run_one(app: &App, schedule: &Schedule, now: &jiff::Zoned) -> Result<()
         Decision::Send => {
             let period = scheduled_period(schedule.kind, &due)?;
             let result = match pick_destinations(app, &schedule.destination_ids) {
-                Ok(dests) => send_report(app, &period, schedule.content, &dests)
+                Ok(dests) => send_report(app, &period, schedule.content, &dests, None)
                     .await?
                     .join("; "),
                 Err(e) => format!("FAILED {e}"),

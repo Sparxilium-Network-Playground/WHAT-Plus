@@ -1,6 +1,6 @@
 # 開發說明
 
-> 最後修改：2026-11-13
+> 最後修改：2026-11-17
 
 使用者文件：[INSTALL.md](INSTALL.md)（安裝、更新、常見問題）、[CLIENT-GUIDE.md](CLIENT-GUIDE.md)、[SERVER-TUI.md](SERVER-TUI.md)、[AGENT-TUI.md](AGENT-TUI.md)。原始設計草案見 [DESIGN.md](DESIGN.md)。
 
@@ -53,7 +53,7 @@ whatplus-client ──Status/Schedules/...─────┘  ▲
 | `ssh/` | `mod.rs`：自己 accept TCP，**握手前**檢查白名單與「至少一把 admin」；`handler.rs`：russh Handler；`session.rs`：一問一答迴圈 |
 | `api/` | 請求處理，依角色限制（agent 只能 `Upload` / `UploadState`） |
 | `report/` | `period`（期間與排程時間）、`aggregate`（彙總）、`format`（en / zh-TW 措辭，產生 `Card`）、`card`（報告卡片：標題、說明、欄位、顏色；`fit()` 套用 Discord embed 長度上限，`to_text()` 給客戶端預覽）。報告以一則 embed 發送，Bot 需要 Embed Links 權限 |
-| `delivery`、`scheduler` | 產生並發送報告；排程每 30 秒檢查 |
+| `delivery`、`scheduler` | 產生並發送報告；排程每 30 秒檢查。手動推送可用 `SendReport.language` 覆蓋各頻道的語言（`None`＝各頻道自己的語言，欄位可省略以相容舊客戶端） |
 | `discord/` | REST（列出 Server／頻道、發 embed 訊息，`allowed_mentions` 為空）；`gateway` 只在第一次啟動時 Identify 一次 |
 | `sanitize` | 資料值進 Discord 前：移除控制字元與 bidi 控制字元、跳脫 Markdown、中和 `@`、截斷 |
 | `tui/` | Admin TUI：Authorized keys、Import keys、Network allowlist、System status、Restart service |

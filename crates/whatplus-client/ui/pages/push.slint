@@ -14,6 +14,16 @@ export component PushPage inherits PageFrame {
             width: 220px;
             model: [@tr("Today"), @tr("Yesterday"), @tr("Last 7 days"), @tr("This month"), @tr("Last month")];
             current-index <=> PushData.range-index;
+            selected => { root.refresh-preview(); }
+        }
+    }
+    FormRow {
+        label: @tr("Language");
+        ComboBox {
+            width: 220px;
+            model: [@tr("Each channel's own language"), "English", "繁體中文"];
+            current-index <=> PushData.send-language-index;
+            selected => { root.refresh-preview(); }
         }
     }
     FormRow {
@@ -49,11 +59,12 @@ export component PushPage inherits PageFrame {
 
     SectionHeader { text: @tr("Preview"); }
     FormRow {
-        label: @tr("Preview language");
-        ComboBox {
+        label: PushData.send-language-index == 0 ? @tr("Preview language") : "";
+        if PushData.send-language-index == 0: ComboBox {
             width: 160px;
             model: ["English", "繁體中文"];
             current-index <=> PushData.language-index;
+            selected => { root.refresh-preview(); }
         }
         Button {
             text: @tr("Preview");
@@ -75,6 +86,13 @@ export component PushPage inherits PageFrame {
     }
     Hint {
         x: 16px;
-        text: @tr("Each channel receives the report in its own language. Data comes from what the machines have uploaded so far.");
+        text: @tr("With \"Each channel's own language\", every channel receives the report in the language set for it. Data comes from what the machines have uploaded so far.");
+    }
+
+    // 已經有預覽時，變更期間或語言就重新產生，避免畫面上留著舊的預覽。
+    function refresh-preview() {
+        if PushData.preview != "" && !StatusBar.busy {
+            PushData.preview-report();
+        }
     }
 }

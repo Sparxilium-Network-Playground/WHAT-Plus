@@ -121,12 +121,19 @@ pub fn preview(app: &App, range: ManualRange, content: ReportContent, lang: Lang
     })
 }
 
-pub async fn send(app: &App, range: ManualRange, content: ReportContent, ids: &[i64]) -> ApiResult {
+/// `language` 為 `Some` 時所有頻道都用該語言，否則各頻道用自己設定的語言。
+pub async fn send(
+    app: &App,
+    range: ManualRange,
+    content: ReportContent,
+    ids: &[i64],
+    language: Option<Language>,
+) -> ApiResult {
     if ids.is_empty() {
         return Err(ApiError::User("select at least one destination".into()));
     }
     let destinations = pick_destinations(app, ids)?;
     let period = manual_period(range, &app.now())?;
-    let results = send_report(app, &period, content, &destinations).await?;
+    let results = send_report(app, &period, content, &destinations, language).await?;
     Ok(Response::Sent { results })
 }

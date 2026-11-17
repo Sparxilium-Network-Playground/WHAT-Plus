@@ -70,6 +70,9 @@ pub enum Request {
         range: ManualRange,
         content: ReportContent,
         destination_ids: Vec<i64>,
+        /// 指定所有頻道使用的語言；`None` 表示各頻道用自己設定的語言。
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        language: Option<Language>,
     },
 }
 
@@ -126,5 +129,31 @@ impl Response {
         Response::Error {
             message: message.into(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 舊版客戶端的 SendReport 沒有 language 欄位，仍要能解析（各頻道用自己的語言）。
+    #[test]
+    fn send_report_language_is_optional() {
+        let req = |language| Request::SendReport {
+            range: ManualRange::Today,
+            content: ReportContent::default(),
+            destination_ids: vec![1],
+            language,
+        };
+        // None 不輸出欄位，等同舊版客戶端送出的 JSON。
+        let old = serde_json::to_string(&req(None)).unwrap();
+        assert!(!old.contains("language"), "{old}");
+        let Request::SendReport { language, .. } = serde_json::from_str(&old).unwrap() else {
+            panic!("wrong variant");
+        };
+        assert_eq!(language, None);
+
+        let json = serde_json::to_string(&req(Some(Language::ZhTw))).unwrap();
+        assert!(json.contains(r#""language":"zh-TW""#), "{json}");
     }
 }

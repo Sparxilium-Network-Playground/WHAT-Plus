@@ -61,6 +61,9 @@ export global StatusData {
 
 export global PushData {
     in-out property <int> range-index: 1;
+    // 發送語言：0＝各頻道自己的語言、1＝English、2＝繁體中文。
+    in-out property <int> send-language-index: 0;
+    // 預覽語言（只在發送語言為「各頻道自己的語言」時使用）：0＝English、1＝繁體中文。
     in-out property <int> language-index: 0;
     in-out property <Content> content: { totals: true, by-tool: true, by-model: true, by-machine: true, top-projects: false, tokens: true };
     in-out property <[CheckItem]> destinations;

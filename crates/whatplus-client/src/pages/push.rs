@@ -1,7 +1,7 @@
 //! 手動推送頁。
 
 use slint::ComponentHandle;
-use whatplus_proto::{Request, Response};
+use whatplus_proto::{Language, Request, Response};
 
 use crate::convert::{
     checked_ids, content_from_ui, destination_checks, language_from_index, range_from_index,
@@ -23,7 +23,8 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
             let req = Request::PreviewReport {
                 range: range_from_index(d.get_range_index()),
                 content: content_from_ui(&d.get_content()),
-                language: language_from_index(d.get_language_index()),
+                language: send_language(d.get_send_language_index())
+                    .unwrap_or_else(|| language_from_index(d.get_language_index())),
             };
             ctx.call(req, |_, ui, resp| {
                 if let Response::Preview { text } = resp {
@@ -46,6 +47,7 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
                 range: range_from_index(d.get_range_index()),
                 content: content_from_ui(&d.get_content()),
                 destination_ids: ids,
+                language: send_language(d.get_send_language_index()),
             };
             ctx.call(req, |ctx, _, resp| {
                 if let Response::Sent { results } = resp {
@@ -60,6 +62,11 @@ pub fn init(ctx: &Ctx, ui: &AppWindow) {
             });
         });
     }
+}
+
+/// 發送語言選單：0＝各頻道自己的語言（`None`），其餘依序為 English、繁體中文。
+fn send_language(index: i32) -> Option<Language> {
+    (index > 0).then(|| language_from_index(index - 1))
 }
 
 /// 目的地清單更新後重建勾選清單（保留原本的勾選）。
