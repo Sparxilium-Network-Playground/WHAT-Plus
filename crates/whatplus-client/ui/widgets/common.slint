@@ -59,15 +59,17 @@ export component SectionHeader inherits HorizontalLayout {
 }
 
 // 表單列：左側標籤、右側控制項。
+// 最小高度設在標籤欄而不是 FormRow 本身：直接設定 FormRow 的 min-height 會蓋掉
+// 版面算出的最小高度，內容較高（例如多個勾選框）時，空間一緊就會被壓扁而與下一列重疊。
 export component FormRow inherits HorizontalLayout {
     in property <string> label;
     in property <string> hint;
     in property <length> label-width: 170px;
     padding-left: 16px;
     spacing: 12px;
-    min-height: Theme.row-height;
     VerticalLayout {
         width: root.label-width;
+        min-height: Theme.row-height;
         alignment: center;
         Text {
             text: root.label;
